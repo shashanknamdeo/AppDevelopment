@@ -1,9 +1,6 @@
 # Ignore everything at root by default
 *
 
-# Allow Snk and SnkApp folder
-!/Snk/
-!/Snk/SnkApp/
 
 # Ignore backups
 Snk/SnkApp_backup/
