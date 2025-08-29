@@ -1,54 +1,13 @@
-# Node dependencies
-Snk/SnkApp/node_modules/
+# Ignore everything at root by default
+*
 
-# Expo
-Snk/SnkApp/.expo/
-Snk/SnkApp/.expo-shared/
-Snk/SnkApp/.bundle/
+# Allow Snk and SnkApp folder
+!/Snk/
+!/Snk/SnkApp/
 
-# Amplify (generated files, safe to ignore)
-Snk/SnkApp/amplify/#current-cloud-backend/
-Snk/SnkApp/amplify/.config/local-aws-info.json
-Snk/SnkApp/amplify/.config/local-env-info.json
+# Ignore backups
+Snk/SnkApp_backup/
 
-# Android build outputs & Gradle caches
-Snk/SnkApp/android/.gradle/
-Snk/SnkApp/android/.kotlin/
-Snk/SnkApp/android/app/build/
-Snk/SnkApp/android/app/.cxx/
-Snk/SnkApp/android/local.properties
-
-# Android secrets
-Snk/SnkApp/android/app/debug.keystore
-
-# iOS (if present in future)
-Snk/SnkApp/ios/build/
-Snk/SnkApp/ios/Pods/
-Snk/SnkApp/ios/Podfile.lock
-
-# Logs
-Snk/SnkApp/npm-debug.log*
-Snk/SnkApp/yarn-debug.log*
-Snk/SnkApp/yarn-error.log*
-
-# IDE configs
-Snk/SnkApp/.idea/
-Snk/SnkApp/.vscode/
-*.iml
-*.swp
-
-# OS files
+# OS junk
 .DS_Store
 Thumbs.db
-
-# Coverage & tests
-Snk/SnkApp/coverage/
-Snk/SnkApp/jest-coverage/
-Snk/SnkApp/.nyc_output/
-
-# Env & secrets
-Snk/SnkApp/.env
-Snk/SnkApp/.env.*.local
-Snk/SnkApp/google-services.json
-Snk/SnkApp/GoogleService-Info.plist
-Snk/SnkApp/*.keystore
