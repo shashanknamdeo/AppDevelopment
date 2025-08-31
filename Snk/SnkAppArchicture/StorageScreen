@@ -94,3 +94,41 @@ which update
 ├──────────┼────────────────┼───────────┼───────────────────┤
 │ Storage  │ SnkS3Storage   │ Update    │ awscloudformation │
 └──────────┴────────────────┴───────────┴───────────────────┘
+
+
+
+----------------------------------------------------------------------------------------
+
+
+at sync
+
+ListS3Files
+ListLocalFiles
+DownloadFiles   = ListS3Files - ListLocalFiles
+UploadFiles     = ListLocalFiles - ListS3Files
+CommonFiles     = Check for change of content
+recursively select the file
+    calculate MD5 value using "react-native-fs + crypto-js"
+    get etag from s3 using "getProperties" amplify v6 function
+    compare value
+        if same continue
+        elif different compare the motification time
+            Local ETag vs Manifest ETag
+            Remote ETag vs Manifest ETag
+            #
+            There are 3 possible situations:
+            1. Only local changed
+                    Local ETag ≠ Manifest ETag
+                    Remote ETag = Manifest ETag
+                    ✅ → Upload the file (local is newer).
+            2. Only remote changed
+                Remote ETag ≠ Manifest ETag
+                Local ETag = Manifest ETag
+                ✅ → Download the file (remote is newer).
+            3. Both changed
+                Local ETag ≠ Manifest ETag
+                Remote ETag ≠ Manifest ETag
+                ⚠️ Conflict → You need a resolution strategy:
+                    LastModified wins (pick whichever timestamp is newer).
+                    Keep both (rename one, e.g., file (conflict).jpg).
+                    Ask user.

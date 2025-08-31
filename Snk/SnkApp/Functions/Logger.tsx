@@ -1,9 +1,19 @@
-// ✅ Toggle logging here
-const isLoggingEnabled = true; // set false in production
+const app_log = true; // set false in production
 
-// ✅ Custom log function
-export function log(...args) {
-  if (isLoggingEnabled) {
-    console.log(...args);
+const function_log = true; // set false in production
+
+// ------------------------------------------------------------------------------------------------
+
+export function appLog(log) {
+  if (app_log) {
+    console.log(log);
   }
 }
+
+
+export function functionLog(log) {
+  if (function_log) {
+    console.log(log);
+  }
+}
+

@@ -48,7 +48,7 @@
 // Amplify.configure(awsExports);
 
 // // ✅ Use external storage for Android so folder shows in File Manager
-// const SNK_FOLDER =
+// const LOCAL_ROOT_FOLDER =
 //   Platform.OS === 'android'
 //     ? `${RNFS.ExternalStorageDirectoryPath}/Snk`
 //     : `${RNFS.DocumentDirectoryPath}/Snk`;
@@ -96,7 +96,7 @@
 //       },
 //     });
 
-//     console.log('Uploaded:', file.name);
+//     appLog('Uploaded:', file.name);
 //   } catch (err) {
 //     console.error('Upload error:', err);
 //     throw err;
@@ -111,17 +111,17 @@
 //   const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
 
 //   useEffect(() => {
-//     console.log('Amplify configured.');
+//     appLog('Amplify configured.');
 //     setIsAmplifyReady(true);
 
 //     // ✅ Check if user already signed in
 //     const checkUser = async () => {
 //       try {
 //         const currentUser = await getCurrentUser();
-//         console.log('User session found:', currentUser);
+//         appLog('User session found:', currentUser);
 //         setLoggedIn(true);
 //       } catch {
-//         console.log('No user signed in');
+//         appLog('No user signed in');
 //         setLoggedIn(false);
 //       } finally {
 //         setLoadingAuth(false);
@@ -140,9 +140,9 @@
 //           return;
 //         }
 
-//         const folderExists = await RNFS.exists(SNK_FOLDER);
-//         if (!folderExists) await RNFS.mkdir(SNK_FOLDER);
-//         await listFilesOfLocalStorage(SNK_FOLDER, setLocalFiles);
+//         const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER);
+//         if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER);
+//         await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
 //       } catch (err) {
 //         console.error('Error creating folder:', err);
 //       }
@@ -186,7 +186,7 @@
 
 //   const listFilesOfLocalStorage = async () => {
 //     try {
-//       const files = await RNFS.readDir(SNK_FOLDER);
+//       const files = await RNFS.readDir(LOCAL_ROOT_FOLDER);
 //       setLocalFiles(files.filter(f => f.isFile()).map(f => f.name));
 //     } catch (err) {
 //       console.error('List local files error:', err);
@@ -195,7 +195,7 @@
 
 //   const uploadLocalStorageFilesToS3 = async () => {
 //     try {
-//       const files = await RNFS.readDir(SNK_FOLDER);
+//       const files = await RNFS.readDir(LOCAL_ROOT_FOLDER);
 //       for (const file of files) {
 //         if (!file.isFile()) continue;
 //         await uploadLocalFileToS3(file);
@@ -217,17 +217,17 @@
 //       }
 
 //       const [res] = await pick({ type: [types.allFiles] });
-//       console.log('Picked file:', res);
+//       appLog('Picked file:', res);
 
-//       const destPath = `${SNK_FOLDER}/${res.name}`;
+//       const destPath = `${LOCAL_ROOT_FOLDER}/${res.name}`;
 //       const sourcePath = res.uri.startsWith('file://') ? res.uri : `file://${res.uri}`;
 
 //       await RNFS.copyFile(sourcePath, destPath);
-//       await listFilesOfLocalStorage(SNK_FOLDER, setLocalFiles);
+//       await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
 
 //       Alert.alert('Success', `${res.name} copied to Snk folder!`);
 //     } catch (err) {
-//       if (isCancel(err)) console.log('User cancelled file picker');
+//       if (isCancel(err)) appLog('User cancelled file picker');
 //       else {
 //         console.error('File pick/copy error:', err);
 //         Alert.alert('Error', 'Failed to copy file to Snk folder.');
@@ -237,9 +237,9 @@
 
 //   const removeFileFromLocalStorage = async (filename: string) => {
 //     try {
-//       const path = `${SNK_FOLDER}/${filename}`;
+//       const path = `${LOCAL_ROOT_FOLDER}/${filename}`;
 //       await RNFS.unlink(path);
-//       await listFilesOfLocalStorage(SNK_FOLDER, setLocalFiles);
+//       await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
 //       Alert.alert('Removed', `${filename} deleted from Snk folder.`);
 //     } catch (err) {
 //       console.error('Remove file error:', err);
@@ -254,7 +254,7 @@
 //         .filter(item => item.path !== 'public/')
 //         .map(item => item.path.replace('public/', ''));
 //       setS3Files(files);
-//       console.log('S3 Files:', files);
+//       appLog('S3 Files:', files);
 //     } catch (err) {
 //       console.error('Error listing files:', err);
 //     }
@@ -263,12 +263,12 @@
 
 // const downloadFileFromS3 = async (filename: string) => {
 //   try {
-//     console.log('Downloading:', filename);
+//     appLog('Downloading:', filename);
 
 //     // Get a signed URL for the file
 //     const { url } = await getUrl({ path: `public/${filename}` });
 
-//     const destPath = `${SNK_FOLDER}/${filename}`;
+//     const destPath = `${LOCAL_ROOT_FOLDER}/${filename}`;
 
 //     // Download file directly to local storage
 //     const downloadRes = RNFS.downloadFile({
@@ -278,8 +278,8 @@
 
 //     await downloadRes.promise;
 
-//     console.log('Downloaded:', filename, '→', destPath);
-//     await listFilesOfLocalStorage(SNK_FOLDER, setLocalFiles);
+//     appLog('Downloaded:', filename, '→', destPath);
+//     await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
 //   } catch (err) {
 //     console.error('Download error:', err);
 //     Alert.alert('Error', `Failed to download ${filename}`);
@@ -489,10 +489,13 @@
 
 
 
+console.log("===================================================================================================")
+
 import 'react-native-get-random-values';
 import 'react-native-url-polyfill/auto';
 
 import React, { useState, useEffect } from 'react';
+
 import {
   SafeAreaView,
   View,
@@ -524,18 +527,30 @@ import {
   uploadLocalStorageFilesToS3,
   pickAndCopyFileToLocalStorage,
   downloadAllFilesFromS3ToLocalStorage,
+  uploadLocalStorageFilesToS3Recursively,
+  downloadAllFilesFromS3ToLocalRecursively,
 } from "./Functions/StorageScreenFunctions";
+
+
+import{
+  compareLocalWithS3,
+} from "./Functions/SyncFunctions";
+
+
+import {appLog} from "./Functions/Logger"
+
 
 
 Amplify.configure(awsExports);
 
 // ✅ Use external storage for Android so folder shows in File Manager
-const SNK_FOLDER =
+const LOCAL_ROOT_FOLDER =
   Platform.OS === 'android'
     ? `${RNFS.ExternalStorageDirectoryPath}/Snk`
     : `${RNFS.DocumentDirectoryPath}/Snk`;
 
 
+const S3_ROOT_FOLDER = 'private'
 
 export default function App() {
   const [loggedIn, setLoggedIn] = useState(false);
@@ -544,18 +559,28 @@ export default function App() {
   const [isAmplifyReady, setIsAmplifyReady] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
 
+// compareLocalWithS3(
+//   LOCAL_ROOT_FOLDER + '/Folder1/Folder3/Folder3',
+//   'public/Folder1/Folder1/Folder3/Folder3/'
+// ).then((compare) => {
+//   console.log('Are identical? ', compare);
+// }).catch((err) => {
+//   console.error(err);
+// });
+
+
   useEffect(() => {
-    console.log('Amplify configured.');
+    appLog('Amplify configured.');
     setIsAmplifyReady(true);
 
     // ✅ Check if user already signed in
     const checkUser = async () => {
       try {
         const currentUser = await getCurrentUser();
-        console.log('User session found:', currentUser);
+        appLog(['User session found:', currentUser]);
         setLoggedIn(true);
       } catch {
-        console.log('No user signed in');
+        appLog('No user signed in');
         setLoggedIn(false);
       } finally {
         setLoadingAuth(false);
@@ -574,14 +599,26 @@ export default function App() {
           return;
         }
 
-        const folderExists = await RNFS.exists(SNK_FOLDER);
-        if (!folderExists) await RNFS.mkdir(SNK_FOLDER);
-        await listFilesOfLocalStorage(SNK_FOLDER, setLocalFiles);
+        const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER);
+        if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER);
+        await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
       } catch (err) {
         console.error('Error creating folder:', err);
       }
     })();
   }, []);
+
+// async function currentAuthenticatedUser() {
+//   try {
+//     const { username, userId, signInDetails } = await getCurrentUser();
+//     console.log(`The username: ${username}`);
+//     console.log(`The userId: ${userId}`);
+//     console.log(`The signInDetails: ${signInDetails}`);
+//   } catch (err) {
+//     console.log(err);
+//   }
+// }
+// currentAuthenticatedUser()
 
 
   if (!isAmplifyReady || loadingAuth) {
@@ -629,8 +666,8 @@ export default function App() {
             Snk Storage Sync
           </Text>
 
-          <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalStorage(s3Files, setLocalFiles)} />
-          <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3(setS3Files)} />
+          <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles)} />
+          <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively()} />
           <Button title="Pick File from Phone"  onPress={() => pickAndCopyFileToLocalStorage(setLocalFiles)} />
           <Button title="List S3 Files"         onPress={() => listS3Files(setS3Files)} />
 
