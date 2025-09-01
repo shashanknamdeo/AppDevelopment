@@ -520,7 +520,6 @@ import { pick, types, isCancel } from '@react-native-documents/picker';
 
 import {
   listS3Files,
-  uploadLocalFileToS3,
   listFilesOfLocalStorage,
   requestStoragePermission,
   removeFileFromLocalStorage,
@@ -619,6 +618,101 @@ export default function App() {
 //   }
 // }
 // currentAuthenticatedUser()
+
+
+// function getMimeTypeUsingFileExtension(filename: string){
+//   // This function guesses the MIME type of a file based on its extension
+//   // 
+//   const ext = filename.split('.').pop()?.toLowerCase();
+//   switch (ext) {
+//     case 'jpg':
+//     case 'jpeg':
+//       return 'image/jpeg';
+//     case 'png':
+//       return 'image/png';
+//     case 'gif':
+//       return 'image/gif';
+//     case 'pdf':
+//       return 'application/pdf';
+//     case 'txt':
+//       return 'text/plain';
+//     case 'csv':
+//       return 'text/csv';
+//     case 'json':
+//       return 'application/json';
+//     case 'mp4':
+//       return 'video/mp4';
+//     case 'mp3':
+//       return 'audio/mpeg';
+//     default:
+//       console.warn('getMimeTypeUsingFileExtension -> Known-Mime-type', filename)
+//       return 'application/octet-stream';
+//   }
+// };
+
+
+// async function uploadLocalStorageFilesToS3(localPath: string, s3Key: string) {
+// // This function:
+// //    Takes a single file object with localPath (file path) and s3key (where in s3, file has to copy).
+// //    Reads the file from local storage.
+// //    Converts it to a blob (file data).
+// //    Uploads it to a storage service (uploadData) with the right MIME type.
+// //    Logs success or error.
+//   functionLog("Initialize Function : uploadLocalStorageFilesToS3")
+//   try {
+//     const fileUri = localPath.startsWith("file://") ? localPath : `file://${localPath}`;
+//     const response = await fetch(fileUri);
+//     const blob = await response.blob();
+//     functionLog(s3Key)
+//     // 
+//     // 
+//     user = await getCurrentUser();
+//     console.log("user : ", user)
+//     const upload_response = await uploadData({
+//       path: s3Key,
+//       data: blob,
+//       level: 'private', 
+//       options: {
+//         contentType: getMimeTypeUsingFileExtension(localPath),
+//       },
+//     });
+//     functionLog(upload_response)
+//     functionLog(`✅ Uploaded: ${fileUri}`);
+//     functionLog("Terminate Function : uploadLocalStorageFilesToS3")
+//   } catch (err) {
+//     console.error("❌ Upload error:", err);
+//     throw err;
+//   }
+// }
+
+
+// async function uploadLocalStorageFilesToS3Recursively(localPath= LOCAL_ROOT_FOLDER, s3Prefix: string = "public"){
+// // This function:
+// //     Takes a s3Prefix (s3 folder) where localPath folder has to copy
+// //     Takes a Folder and upload files and folder recursively in s3
+// //     folder apth in s3 decide on the folder path in local storege
+//   functionLog("Initialize Function : uploadLocalStorageFilesToS3Recursively")
+//   try {
+//     const items = await RNFS.readDir(localPath);
+
+//     for (const item of items) {
+//       if (item.isFile()) {
+//         // File → upload directly
+//         const s3Key = `${s3Prefix}/${item.name}`;
+//         await uploadLocalStorageFilesToS3(item.path, s3Key);
+//       } else if (item.isDirectory()) {
+//         // Folder → recursive call
+//         const newPrefix = `${s3Prefix}/${item.name}`;
+//         await uploadLocalStorageFilesToS3Recursively(item.path, newPrefix);
+//       }
+//     }
+//     functionLog("Terminate Function : uploadLocalStorageFilesToS3Recursively")
+//   } catch (error) {
+//     console.error("❌ Folder traversal error:", error);
+//   }
+// }
+
+
 
 
   if (!isAmplifyReady || loadingAuth) {

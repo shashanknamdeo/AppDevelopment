@@ -1,5 +1,5 @@
 
-import { signOut, getCurrentUser } from 'aws-amplify/auth';   // ✅ Import getCurrentUser
+import { signOut, getCurrentUser } from 'aws-amplify/auth';
 
 import {
   // SafeAreaView,
