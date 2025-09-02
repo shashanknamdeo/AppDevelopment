@@ -102,6 +102,11 @@ which update
 
 at sync
 
+renew local manifest first
+
+LocalMenifest
+RemoteMenifest
+
 ListS3Files
 ListLocalFiles
 DownloadFiles   = ListS3Files - ListLocalFiles

@@ -48,7 +48,7 @@
 // Amplify.configure(awsExports);
 
 // // ✅ Use external storage for Android so folder shows in File Manager
-// const LOCAL_ROOT_FOLDER =
+// const LOCAL_ROOT_FOLDER_PATH =
 //   Platform.OS === 'android'
 //     ? `${RNFS.ExternalStorageDirectoryPath}/Snk`
 //     : `${RNFS.DocumentDirectoryPath}/Snk`;
@@ -140,9 +140,9 @@
 //           return;
 //         }
 
-//         const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER);
-//         if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER);
-//         await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+//         const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER_PATH);
+//         if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER_PATH);
+//         await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER_PATH, setLocalFiles);
 //       } catch (err) {
 //         console.error('Error creating folder:', err);
 //       }
@@ -186,7 +186,7 @@
 
 //   const listFilesOfLocalStorage = async () => {
 //     try {
-//       const files = await RNFS.readDir(LOCAL_ROOT_FOLDER);
+//       const files = await RNFS.readDir(LOCAL_ROOT_FOLDER_PATH);
 //       setLocalFiles(files.filter(f => f.isFile()).map(f => f.name));
 //     } catch (err) {
 //       console.error('List local files error:', err);
@@ -195,7 +195,7 @@
 
 //   const uploadLocalStorageFilesToS3 = async () => {
 //     try {
-//       const files = await RNFS.readDir(LOCAL_ROOT_FOLDER);
+//       const files = await RNFS.readDir(LOCAL_ROOT_FOLDER_PATH);
 //       for (const file of files) {
 //         if (!file.isFile()) continue;
 //         await uploadLocalFileToS3(file);
@@ -219,11 +219,11 @@
 //       const [res] = await pick({ type: [types.allFiles] });
 //       appLog('Picked file:', res);
 
-//       const destPath = `${LOCAL_ROOT_FOLDER}/${res.name}`;
+//       const destPath = `${LOCAL_ROOT_FOLDER_PATH}/${res.name}`;
 //       const sourcePath = res.uri.startsWith('file://') ? res.uri : `file://${res.uri}`;
 
 //       await RNFS.copyFile(sourcePath, destPath);
-//       await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+//       await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER_PATH, setLocalFiles);
 
 //       Alert.alert('Success', `${res.name} copied to Snk folder!`);
 //     } catch (err) {
@@ -237,9 +237,9 @@
 
 //   const removeFileFromLocalStorage = async (filename: string) => {
 //     try {
-//       const path = `${LOCAL_ROOT_FOLDER}/${filename}`;
+//       const path = `${LOCAL_ROOT_FOLDER_PATH}/${filename}`;
 //       await RNFS.unlink(path);
-//       await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+//       await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER_PATH, setLocalFiles);
 //       Alert.alert('Removed', `${filename} deleted from Snk folder.`);
 //     } catch (err) {
 //       console.error('Remove file error:', err);
@@ -268,7 +268,7 @@
 //     // Get a signed URL for the file
 //     const { url } = await getUrl({ path: `public/${filename}` });
 
-//     const destPath = `${LOCAL_ROOT_FOLDER}/${filename}`;
+//     const destPath = `${LOCAL_ROOT_FOLDER_PATH}/${filename}`;
 
 //     // Download file directly to local storage
 //     const downloadRes = RNFS.downloadFile({
@@ -279,7 +279,7 @@
 //     await downloadRes.promise;
 
 //     appLog('Downloaded:', filename, '→', destPath);
-//     await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+//     await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER_PATH, setLocalFiles);
 //   } catch (err) {
 //     console.error('Download error:', err);
 //     Alert.alert('Error', `Failed to download ${filename}`);
@@ -532,7 +532,7 @@ import {
 
 
 import{
-  compareLocalWithS3,
+  sync,
 } from "./Functions/SyncFunctions";
 
 
@@ -543,29 +543,28 @@ import {appLog} from "./Functions/Logger"
 Amplify.configure(awsExports);
 
 // ✅ Use external storage for Android so folder shows in File Manager
-const LOCAL_ROOT_FOLDER =
+const LOCAL_ROOT_FOLDER_PATH =
   Platform.OS === 'android'
     ? `${RNFS.ExternalStorageDirectoryPath}/Snk`
     : `${RNFS.DocumentDirectoryPath}/Snk`;
 
 
-const S3_ROOT_FOLDER = 'private'
+const LOCAL_MANIFEST_FILE_PATH =
+  Platform.OS === 'android'
+    ? `${RNFS.ExternalStorageDirectoryPath}/SnkManifest`
+    : `${RNFS.DocumentDirectoryPath}/SnkManifest`;
+
 
 export default function App() {
+  const [s3_root_folder_path,     setS3RootFolderPath]   = useState<string[]>(""); // public/username
+  const [s3_data_folder_path,     setS3DataFolderPath]   = useState<string[]>(""); // public/username/data
+  const [s3_manifest_folder_path, setS3ManifestFolderPath] = useState<string[]>(""); // public/username/manifest.json
   const [loggedIn, setLoggedIn] = useState(false);
   const [localFiles, setLocalFiles] = useState<string[]>([]);
   const [s3Files, setS3Files] = useState<string[]>([]);
   const [isAmplifyReady, setIsAmplifyReady] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
-
-// compareLocalWithS3(
-//   LOCAL_ROOT_FOLDER + '/Folder1/Folder3/Folder3',
-//   'public/Folder1/Folder1/Folder3/Folder3/'
-// ).then((compare) => {
-//   console.log('Are identical? ', compare);
-// }).catch((err) => {
-//   console.error(err);
-// });
+  const [currentUser, setCurrentUser] = useState<string[]>("");
 
 
   useEffect(() => {
@@ -577,6 +576,13 @@ export default function App() {
       try {
         const currentUser = await getCurrentUser();
         appLog(['User session found:', currentUser]);
+        setCurrentUser(currentUser)
+        // 
+        setS3RootFolderPath(`public/${currentUser.username}`)
+        setS3DataFolderPath(`public/${currentUser.username}/data`)
+        setS3ManifestFolderPath(`public/${currentUser.username}`)
+        // 
+        appLog(`s3_root_folder_path : ${s3_root_folder_path}`) // ✅ Runs only after first render
         setLoggedIn(true);
       } catch {
         appLog('No user signed in');
@@ -589,6 +595,7 @@ export default function App() {
     checkUser();
   }, []);
 
+
   useEffect(() => {
     (async () => {
       try {
@@ -598,121 +605,18 @@ export default function App() {
           return;
         }
 
-        const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER);
-        if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER);
-        await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+        const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER_PATH);
+        if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER_PATH);
+        await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER_PATH, setLocalFiles);
       } catch (err) {
         console.error('Error creating folder:', err);
       }
     })();
   }, []);
 
-// async function currentAuthenticatedUser() {
-//   try {
-//     const { username, userId, signInDetails } = await getCurrentUser();
-//     console.log(`The username: ${username}`);
-//     console.log(`The userId: ${userId}`);
-//     console.log(`The signInDetails: ${signInDetails}`);
-//   } catch (err) {
-//     console.log(err);
-//   }
-// }
-// currentAuthenticatedUser()
 
 
-// function getMimeTypeUsingFileExtension(filename: string){
-//   // This function guesses the MIME type of a file based on its extension
-//   // 
-//   const ext = filename.split('.').pop()?.toLowerCase();
-//   switch (ext) {
-//     case 'jpg':
-//     case 'jpeg':
-//       return 'image/jpeg';
-//     case 'png':
-//       return 'image/png';
-//     case 'gif':
-//       return 'image/gif';
-//     case 'pdf':
-//       return 'application/pdf';
-//     case 'txt':
-//       return 'text/plain';
-//     case 'csv':
-//       return 'text/csv';
-//     case 'json':
-//       return 'application/json';
-//     case 'mp4':
-//       return 'video/mp4';
-//     case 'mp3':
-//       return 'audio/mpeg';
-//     default:
-//       console.warn('getMimeTypeUsingFileExtension -> Known-Mime-type', filename)
-//       return 'application/octet-stream';
-//   }
-// };
-
-
-// async function uploadLocalStorageFilesToS3(localPath: string, s3Key: string) {
-// // This function:
-// //    Takes a single file object with localPath (file path) and s3key (where in s3, file has to copy).
-// //    Reads the file from local storage.
-// //    Converts it to a blob (file data).
-// //    Uploads it to a storage service (uploadData) with the right MIME type.
-// //    Logs success or error.
-//   functionLog("Initialize Function : uploadLocalStorageFilesToS3")
-//   try {
-//     const fileUri = localPath.startsWith("file://") ? localPath : `file://${localPath}`;
-//     const response = await fetch(fileUri);
-//     const blob = await response.blob();
-//     functionLog(s3Key)
-//     // 
-//     // 
-//     user = await getCurrentUser();
-//     console.log("user : ", user)
-//     const upload_response = await uploadData({
-//       path: s3Key,
-//       data: blob,
-//       level: 'private', 
-//       options: {
-//         contentType: getMimeTypeUsingFileExtension(localPath),
-//       },
-//     });
-//     functionLog(upload_response)
-//     functionLog(`✅ Uploaded: ${fileUri}`);
-//     functionLog("Terminate Function : uploadLocalStorageFilesToS3")
-//   } catch (err) {
-//     console.error("❌ Upload error:", err);
-//     throw err;
-//   }
-// }
-
-
-// async function uploadLocalStorageFilesToS3Recursively(localPath= LOCAL_ROOT_FOLDER, s3Prefix: string = "public"){
-// // This function:
-// //     Takes a s3Prefix (s3 folder) where localPath folder has to copy
-// //     Takes a Folder and upload files and folder recursively in s3
-// //     folder apth in s3 decide on the folder path in local storege
-//   functionLog("Initialize Function : uploadLocalStorageFilesToS3Recursively")
-//   try {
-//     const items = await RNFS.readDir(localPath);
-
-//     for (const item of items) {
-//       if (item.isFile()) {
-//         // File → upload directly
-//         const s3Key = `${s3Prefix}/${item.name}`;
-//         await uploadLocalStorageFilesToS3(item.path, s3Key);
-//       } else if (item.isDirectory()) {
-//         // Folder → recursive call
-//         const newPrefix = `${s3Prefix}/${item.name}`;
-//         await uploadLocalStorageFilesToS3Recursively(item.path, newPrefix);
-//       }
-//     }
-//     functionLog("Terminate Function : uploadLocalStorageFilesToS3Recursively")
-//   } catch (error) {
-//     console.error("❌ Folder traversal error:", error);
-//   }
-// }
-
-
+console.log('currentUser.username : ', currentUser.username)
 
 
   if (!isAmplifyReady || loadingAuth) {
@@ -760,10 +664,12 @@ export default function App() {
             Snk Storage Sync
           </Text>
 
-          <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles)} />
-          <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively()} />
+          <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path)} />
+          <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively(LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path )} />
           <Button title="Pick File from Phone"  onPress={() => pickAndCopyFileToLocalStorage(setLocalFiles)} />
-          <Button title="List S3 Files"         onPress={() => listS3Files(setS3Files)} />
+          <Button title="List S3 Files"         onPress={() => listS3Files(setS3Files, currentUser.username)} />
+          <Button title="Sync"                  onPress={() => sync(LOCAL_ROOT_FOLDER_PATH, LOCAL_MANIFEST_FILE_PATH, s3_root_folder_path, s3_manifest_folder_path)} />
+
 
           {/* Local Files */}
           <View style={{ marginVertical: 10 }}>

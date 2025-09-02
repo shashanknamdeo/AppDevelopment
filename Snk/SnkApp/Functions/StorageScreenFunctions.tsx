@@ -42,6 +42,14 @@ const LOCAL_ROOT_FOLDER =
 // ------------------------------------------------------------------------------------------------
 
 
+export function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
+// ------------------------------------------------------------------------------------------------
+
+
 function getMimeTypeUsingFileExtension(filename: string){
   // This function guesses the MIME type of a file based on its extension
   // 
@@ -73,34 +81,41 @@ function getMimeTypeUsingFileExtension(filename: string){
 };
 
 
-export async function uploadLocalStorageFilesToS3(localPath: string, s3Key: string) {
+export async function uploadLocalStorageFilesToS3(localPath: string, file_prefix: string, filename: string) {
 // This function:
 //    Takes a single file object with localPath (file path) and s3key (where in s3, file has to copy).
 //    Reads the file from local storage.
 //    Converts it to a blob (file data).
 //    Uploads it to a storage service (uploadData) with the right MIME type.
 //    Logs success or error.
-  functionLog("Initialize Function : uploadLocalStorageFilesToS3")
+  functionLog("Initialize Function : uploadLocalStorageFilesToS3");
+
   try {
+    // Normalize URI
+    const s3Key = `${file_prefix}/${filename}`;
     const fileUri = localPath.startsWith("file://") ? localPath : `file://${localPath}`;
+
+    // Read local file as blob
     const response = await fetch(fileUri);
     const blob = await response.blob();
-    functionLog(s3Key)
-    // 
-    // 
-    user = await getCurrentUser();
-    console.log(user)
-    const upload_response = await uploadData({
+
+    // Start upload
+    const uploadTask = uploadData({
       path: s3Key,
       data: blob,
-      level: 'private', 
       options: {
         contentType: getMimeTypeUsingFileExtension(localPath),
       },
     });
-    functionLog(upload_response)
-    functionLog(`✅ Uploaded: ${fileUri}`);
-    functionLog("Terminate Function : uploadLocalStorageFilesToS3")
+
+    // Wait for completion (this resolves only when upload succeeds/fails)
+    const result = await uploadTask.result;
+
+    // If we reach here, upload is SUCCESS
+    functionLog(`✅ Uploaded: ${fileUri} -> ${s3Key}`);
+    functionLog("Terminate Function : uploadLocalStorageFilesToS3");
+    return result;
+
   } catch (err) {
     console.error("❌ Upload error:", err);
     throw err;
@@ -108,23 +123,23 @@ export async function uploadLocalStorageFilesToS3(localPath: string, s3Key: stri
 }
 
 
-export async function uploadLocalStorageFilesToS3Recursively(localPath= LOCAL_ROOT_FOLDER, s3Prefix: string = "private"){
+
+export async function uploadLocalStorageFilesToS3Recursively(localPath= LOCAL_ROOT_FOLDER, s3_data_folder_path: string = ""){
 // This function:
-//     Takes a s3Prefix (s3 folder) where localPath folder has to copy
 //     Takes a Folder and upload files and folder recursively in s3
 //     folder apth in s3 decide on the folder path in local storege
   functionLog("Initialize Function : uploadLocalStorageFilesToS3Recursively")
+  functionLog(s3_data_folder_path)
   try {
     const items = await RNFS.readDir(localPath);
 
     for (const item of items) {
       if (item.isFile()) {
         // File → upload directly
-        const s3Key = `${s3Prefix}/${item.name}`;
-        await uploadLocalStorageFilesToS3(item.path, s3Key);
+        await uploadLocalStorageFilesToS3(item.path, s3_data_folder_path, item.name);
       } else if (item.isDirectory()) {
         // Folder → recursive call
-        const newPrefix = `${s3Prefix}/${item.name}`;
+        const newPrefix = `${s3_data_folder_path}/${item.name}/`;
         await uploadLocalStorageFilesToS3Recursively(item.path, newPrefix);
       }
     }
@@ -246,13 +261,13 @@ export async function pickAndCopyFileToLocalStorage(setLocalFiles){
 // ------------------------------------------------------------------------------------------------
 
 
-export async function listS3Files(setS3Files) {
+export async function listS3Files(setS3Files, s3_data_folder_path) {
   functionLog("Initialize Function : listS3Files")
   try {
-    const result = await list({ path: 'private/' });
+    const result = await list({ path: `${s3_data_folder_path}/`});
     const files = result.items
-      .filter(item => item.path !== 'private/')
-      .map(item => item.path.replace('private/', ''));
+      .filter(item => item.path !== `${s3_data_folder_path}/`)
+      .map(item => item.path.replace(`${s3_data_folder_path}/`, ''));
     setS3Files(files); // Error listing files: TypeError: setS3Files is not a function (it is Object) 
     functionLog(['S3 Files:', files]);
     functionLog("Terminate Function : listS3Files")
@@ -265,26 +280,24 @@ export async function listS3Files(setS3Files) {
 // ------------------------------------------------------------------------------------------------
 
 
-export async function downloadFileFromS3ToLocalStorage(filename, setLocalFiles) {
+export async function downloadFileFromS3ToLocalStorage(filename, source_path, destination_Path) {
   functionLog("Initialize Function : downloadFileFromS3ToLocalStorage")
+  functionLog([filename, source_path, destination_Path])
   try {
     functionLog(['Downloading:', filename]);
 
     // Get a signed URL for the file
-    const { url } = await getUrl({ path: `private/${filename}` });
-
-    const destPath = `${LOCAL_ROOT_FOLDER}/${filename}`;
+    const { url } = await getUrl({ path: `${source_path}/${filename}` });
 
     // Download file directly to local storage
     const downloadRes = RNFS.downloadFile({
       fromUrl: url.toString(),
-      toFile: destPath,
+      toFile: `${destination_Path}/${filename}`,
     });
 
     await downloadRes.promise;
 
-    functionLog(['Downloaded:', filename, '→', destPath]);
-    await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+    functionLog(['Downloaded:', filename, '→', destination_Path]);
     functionLog("Terminate Function : downloadFileFromS3ToLocalStorage")
   } catch (err) {
     console.error('Download error:', err);
@@ -326,25 +339,26 @@ async function ensureDirExists(dirPath) {
   }
 }
 
-export async function downloadAllFilesFromS3ToLocalRecursively(setLocalFiles) {
+export async function downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, local_root_folder, s3_data_folder_path) {
   functionLog("Initialize Function : downloadAllFilesFromS3ToLocalRecursively");
   try {
     // 1. List files in S3
-    const result = await list({ path: 'private/' });
+    functionLog(username)
+    const result = await list({ path: `${s3_data_folder_path}/` });
     const files = result.items
-      .filter(item => item.path !== 'private/')
-      .map(item => item.path.replace('private/', ''));
+      .filter(item => item.path !== `${s3_data_folder_path}/`)
+      .map(item => item.path.replace(`${s3_data_folder_path}/`, ''));
 
     functionLog(`S3 Files: ${files}`);
 
     // 2. Ensure root folder exists
-    if (!(await RNFS.exists(LOCAL_ROOT_FOLDER))) {
-      await RNFS.mkdir(LOCAL_ROOT_FOLDER);
+    if (!(await RNFS.exists(local_root_folder))) {
+      await RNFS.mkdir(local_root_folder);
     }
 
     // 3. Process each file or folder
     for (const filename of files) {
-      const destPath = `${LOCAL_ROOT_FOLDER}/${filename}`;
+      const destPath = `${local_root_folder}/${filename}`;
 
       if (filename.endsWith("/")) {
         // 📂 It's a folder → create it locally
@@ -354,7 +368,7 @@ export async function downloadAllFilesFromS3ToLocalRecursively(setLocalFiles) {
       }
 
       // 📄 It's a file → download
-      const { url } = await getUrl({ path: `private/${filename}` });
+      const { url } = await getUrl({ path: `${s3_data_folder_path}/${filename}` });
 
       const folderPath = destPath.substring(0, destPath.lastIndexOf('/'));
       await ensureDirExists(folderPath);
@@ -365,7 +379,7 @@ export async function downloadAllFilesFromS3ToLocalRecursively(setLocalFiles) {
     }
 
     // 4. Refresh local file list
-    await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER, setLocalFiles);
+    await listFilesOfLocalStorage(local_root_folder, setLocalFiles);
 
     functionLog("✅ All files downloaded!");
   } catch (err) {
