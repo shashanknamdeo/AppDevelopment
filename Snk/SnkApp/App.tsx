@@ -519,20 +519,16 @@ import RNFS from 'react-native-fs';
 import { pick, types, isCancel } from '@react-native-documents/picker';
 
 import {
-  listS3Files,
-  listFilesOfLocalStorage,
   requestStoragePermission,
-  removeFileFromLocalStorage,
   uploadLocalStorageFilesToS3,
-  pickAndCopyFileToLocalStorage,
-  downloadAllFilesFromS3ToLocalStorage,
   uploadLocalStorageFilesToS3Recursively,
   downloadAllFilesFromS3ToLocalRecursively,
 } from "./Functions/StorageScreenFunctions";
 
-
 import{
   sync,
+  forceUpload,
+  forceDownload,
 } from "./Functions/SyncFunctions";
 
 
@@ -556,12 +552,10 @@ const LOCAL_MANIFEST_FILE_PATH =
 
 
 export default function App() {
-  const [s3_root_folder_path,     setS3RootFolderPath]   = useState<string[]>(""); // public/username
-  const [s3_data_folder_path,     setS3DataFolderPath]   = useState<string[]>(""); // public/username/data
-  const [s3_manifest_folder_path, setS3ManifestFolderPath] = useState<string[]>(""); // public/username/manifest.json
+  const [s3_root_folder_path,     setS3RootFolderPath]      = useState<string[]>(""); // public/username
+  const [s3_data_folder_path,     setS3DataFolderPath]      = useState<string[]>(""); // public/username/data
+  const [s3_manifest_folder_path, setS3ManifestFolderPath]  = useState<string[]>(""); // public/username/manifest.json
   const [loggedIn, setLoggedIn] = useState(false);
-  const [localFiles, setLocalFiles] = useState<string[]>([]);
-  const [s3Files, setS3Files] = useState<string[]>([]);
   const [isAmplifyReady, setIsAmplifyReady] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
   const [currentUser, setCurrentUser] = useState<string[]>("");
@@ -607,7 +601,6 @@ export default function App() {
 
         const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER_PATH);
         if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER_PATH);
-        await listFilesOfLocalStorage(LOCAL_ROOT_FOLDER_PATH, setLocalFiles);
       } catch (err) {
         console.error('Error creating folder:', err);
       }
@@ -666,133 +659,14 @@ console.log('currentUser.username : ', currentUser.username)
 
           <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path)} />
           <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively(LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path )} />
-          <Button title="Pick File from Phone"  onPress={() => pickAndCopyFileToLocalStorage(setLocalFiles)} />
-          <Button title="List S3 Files"         onPress={() => listS3Files(setS3Files, currentUser.username)} />
-          <Button title="Sync"                  onPress={() => sync(LOCAL_ROOT_FOLDER_PATH, LOCAL_MANIFEST_FILE_PATH, s3_root_folder_path, s3_manifest_folder_path)} />
+          <Button title="Force Download"        onPress={() => forceDownload()} />
+          <Button title="Force Upload"          onPress={() => forceUpload()} />
+          <Button title="Sync"                  onPress={() => sync(LOCAL_ROOT_FOLDER_PATH, LOCAL_MANIFEST_FILE_PATH, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path)} />
 
-
-          {/* Local Files */}
-          <View style={{ marginVertical: 10 }}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>
-              Snk Folder Files:
-            </Text>
-            {localFiles.length > 0 ? (
-              <View
-                style={{
-                  backgroundColor: '#f2f2f2',
-                  padding: 10,
-                  borderRadius: 8,
-                }}
-              >
-                {localFiles.map((f, i) => (
-                  <View
-                    key={`local-${i}`}
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      borderBottomWidth: 0.5,
-                      borderBottomColor: '#ccc',
-                      paddingVertical: 4,
-                    }}
-                  >
-                    <Text style={{ fontSize: 16 }}>📄 {f}</Text>
-                    <TouchableOpacity onPress={() => removeFileFromLocalStorage(f, setLocalFiles)}>
-                      <Text style={{ color: 'red', fontWeight: 'bold' }}>Delete</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <Text>None</Text>
-            )}
-          </View>
-
-          {/* S3 Files */}
-          <View style={{ marginVertical: 10 }}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>
-              S3 Bucket Files:
-            </Text>
-            {s3Files.length > 0 ? (
-              <View
-                style={{
-                  backgroundColor: '#e8f4ff',
-                  padding: 10,
-                  borderRadius: 8,
-                }}
-              >
-                {s3Files.map((f, i) => (
-                  <Text
-                    key={`s3-${i}`}
-                    style={{
-                      fontSize: 16,
-                      paddingVertical: 4,
-                      borderBottomWidth: 0.5,
-                      borderBottomColor: '#aaa',
-                    }}
-                  >
-                    ☁️ {f}
-                  </Text>
-                ))}
-              </View>
-            ) : (
-              <Text>No files found in S3</Text>
-            )}
-          </View>
         </ScrollView>
       </SafeAreaView>
     );
   }
-
-
-{/* S3 Files */}
-<View style={{ marginVertical: 10 }}>
-  <Text style={{ fontWeight: 'bold', marginBottom: 5 }}>
-    S3 Bucket Files:
-  </Text>
-  {s3Files.length > 0 ? (
-    <View
-      style={{
-        backgroundColor: '#e8f4ff',
-        padding: 10,
-        borderRadius: 8,
-      }}
-    >
-      {s3Files.map((f, i) => (
-        <View
-          key={`s3-${i}`}
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            borderBottomWidth: 0.5,
-            borderBottomColor: '#aaa',
-            paddingVertical: 6,
-          }}
-        >
-          <Text style={{ fontSize: 16 }}>☁️ {f}</Text>
-          <TouchableOpacity
-            onPress={() => downloadFileFromS3(f)}
-            style={{
-              backgroundColor: '#007AFF',
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>
-              Download
-            </Text>
-          </TouchableOpacity>
-        </View>
-      ))}
-    </View>
-  ) : (
-    <Text>No files found in S3</Text>
-  )}
-</View>
-
-
 
   return <AuthScreen onSignIn={() => setLoggedIn(true)} />;
 }

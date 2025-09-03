@@ -14,7 +14,9 @@ import {functionLog} from './Logger'
 
 import {
   uploadLocalStorageFilesToS3,
+  uploadListLocalStorageFilesToS3,
   downloadFileFromS3ToLocalStorage,
+  downloadListFilesFromS3ToLocalStorage,
 } from './StorageScreenFunctions'
 
 functionLog("Initialize File -> SyncFunctions")
@@ -60,7 +62,7 @@ export async function createLocalManifest(rootPath: string, manifestPath: string
       const stat = await RNFS.stat(file);
       const md5 = await getLocalFileMD5(file);
       // Store relative path (without root)
-      const relativePath = file.replace(rootPath, '');
+      const relativePath = file.replace(`${rootPath}/`, '');
 
       manifest.files[relativePath] = {
         path: relativePath,
@@ -243,37 +245,158 @@ export async function getS3FileTimestamp(s3Path: string): Promise<Date | null> {
 // ------------------------------------------------------------------------------------------------
 
 
-export async function sync(local_root_folder_path, local_manifest_folder_path, s3_root_folder_path, s3_manifest_folder_path){
+interface ManifestFile {
+  path: string;
+  etag: string;
+  lastModified: string;
+  size: number;
+}
+
+interface ManifestComparison {
+  onlyInLocal: string[];
+  onlyInRemote: string[];
+  modified: string[];
+  same: string[];
+}
+
+export async function compareManifests( folderPath: string, localManifestFile: string, remoteManifestFile: string ): Promise<ManifestComparison | null> {
+  functionLog("Initialize Function : compareManifests");
+
+  try {
+    // Read both manifest files
+    const localPath = `${folderPath}/${localManifestFile}`;
+    const remotePath = `${folderPath}/${remoteManifestFile}`;
+
+    const localExists = await RNFS.exists(localPath);
+    const remoteExists = await RNFS.exists(remotePath);
+
+    if (!localExists || !remoteExists) {
+      console.warn("⚠️ One or both manifest files are missing.");
+      return null;
+    }
+
+    const localContent = await RNFS.readFile(localPath, 'utf8');
+    const remoteContent = await RNFS.readFile(remotePath, 'utf8');
+
+    const localManifest: Manifest = JSON.parse(localContent);
+    const remoteManifest: Manifest = JSON.parse(remoteContent);
+
+    const onlyInLocal: string[] = [];
+    const onlyInRemote: string[] = [];
+    const modified: string[] = [];
+    const same: string[] = [];
+
+    // Compare manifests
+    const allKeys = new Set([
+      ...Object.keys(localManifest.files),
+      ...Object.keys(remoteManifest.files),
+    ]);
+
+    for (const key of allKeys) {
+      const localFile = localManifest.files[key];
+      const remoteFile = remoteManifest.files[key];
+
+      if (localFile && !remoteFile) {
+        onlyInLocal.push(key);
+      } else if (!localFile && remoteFile) {
+        onlyInRemote.push(key);
+      } else if (localFile && remoteFile) {
+        // Compare checksum and size
+        if (
+          localFile.etag !== remoteFile.etag ||
+          localFile.size !== remoteFile.size
+        ) {
+          modified.push(key);
+        } else {
+          same.push(key);
+        }
+      }
+    }
+
+    const result: ManifestComparison = {
+      onlyInLocal,
+      onlyInRemote,
+      modified,
+      same,
+    };
+
+    functionLog("Terminate Function : compareManifests");
+    return result;
+  } catch (err) {
+    console.error("⚠️ Error comparing manifests:", err);
+    return null;
+  }
+}
+
+
+// ------------------------------------------------------------------------------------------------
+
+export async function compareModifiedFiles(list_modified_files, local_manifest_file_path, s3_manifest_file_path) {
+  // Load manifests from local storage
+  const localManifestRaw = await RNFS.readFile(local_manifest_file_path, "utf8");
+  const s3ManifestRaw = await RNFS.readFile(s3_manifest_file_path, "utf8");
+
+  const localManifest: Manifest = JSON.parse(localManifestRaw);
+  const s3Manifest: Manifest = JSON.parse(s3ManifestRaw);
+
+  const latestLocal: string[] = [];
+  const latestRemote: string[] = [];
+
+  for (const file of modifiedFiles) {
+    const localEntry = localManifest.files[file];
+    const s3Entry = s3Manifest.files[file];
+    // 
+    // Compare timestamps
+    const localTime = new Date(localEntry.lastModified).getTime();
+    const remoteTime = new Date(s3Entry.lastModified).getTime();
+    // 
+    // Seprate local_latest and remote_latest
+    if (localTime > remoteTime) {
+      latestLocal.push(file);
+    } else if (remoteTime > localTime) {
+      latestRemote.push(file);
+    }
+  }
+  return {local_latest : latestLocal, remote_latest, latestRemote}
+}
+
+
+
+// ------------------------------------------------------------------------------------------------
+
+
+export async function sync(local_root_folder_path, local_manifest_folder_path, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path){
   const local_manifest_file_path = `${local_manifest_folder_path}/manifest.json`
+  const s3_manifest_file_path = `${local_manifest_folder_path}/s3_manifest.json`
   // 
   // Create New Manifest
+  functionLog('Create New Manifest -------------------------------------------------------------------------------')
   await createLocalManifest(local_root_folder_path, local_manifest_file_path)
   // 
   // Download S3 Manifest
+  functionLog('Download S3 Manifest ------------------------------------------------------------------------------')
   await downloadFileFromS3ToLocalStorage('s3_manifest.json', s3_manifest_folder_path, local_manifest_folder_path)
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// upload local manifest to s3
-// uploadLocalStorageFilesToS3(local_manifest_folder_path, s3_root_folder_path, 's3_manifest.json')
+  // 
+  // Compare Manifest Response
+  functionLog('Compare Manifest Response -------------------------------------------------------------------------')
+  const compare_manifest_response =  await compareManifests( local_manifest_folder_path, 'manifest.json', 's3_manifest.json')
+  await compare_manifest_response.promise
+  functionLog(compare_manifest_response)
+  // 
+  // Download Only-In-Remote Files
+  functionLog('Download Only-In-Remote Files ---------------------------------------------------------------------')
+  await downloadListFilesFromS3ToLocalStorage(compare_manifest_response.onlyInRemote, s3_data_folder_path, local_root_folder_path)
+  // 
+  // Upload Only-In-Local Files
+  functionLog('Upload Only-In-Local Files ------------------------------------------------------------------------')
+  await uploadListLocalStorageFilesToS3(compare_manifest_response.onlyInLocal, local_root_folder_path, s3_data_folder_path)
+  // 
+  // Resolve Modified Files
+  functionLog('Resolve Modified Files ----------------------------------------------------------------------------')
+  modified_files_response = await compareModifiedFiles(compare_manifest_response.modified, local_manifest_file_path, s3_manifest_file_path)
+  await downloadListFilesFromS3ToLocalStorage(modified_files_response.remote_latest, s3_data_folder_path, local_root_folder_path)
+  await uploadListLocalStorageFilesToS3(modified_files_response.local_latest, local_root_folder_path, s3_data_folder_path)
+  // 
+  // upload local manifest to s3
+  // uploadLocalStorageFilesToS3(local_manifest_file_path, s3_root_folder_path, 's3_manifest.json')
 }
