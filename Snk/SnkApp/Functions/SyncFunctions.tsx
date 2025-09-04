@@ -13,11 +13,17 @@ import CryptoJS from 'crypto-js';
 import {functionLog} from './Logger'
 
 import {
+  removeListLocalFiles,
   uploadLocalStorageFilesToS3,
   uploadListLocalStorageFilesToS3,
   downloadFileFromS3ToLocalStorage,
   downloadListFilesFromS3ToLocalStorage,
 } from './StorageScreenFunctions'
+
+import {
+  confirmForceUpload,
+  confirmForceDownload,
+  } from '../UI/SyncUI'
 
 functionLog("Initialize File -> SyncFunctions")
 
@@ -50,7 +56,7 @@ export async function getLocalFileMD5(filePath: string): Promise<string> {
 
 
 // ✅ Main Function: Create Manifest
-export async function createLocalManifest(rootPath: string, manifestPath: string): Promise<void> {
+export async function createLocalManifest(rootPath: string, manifestPath: string){
   const files = await listLocalFilesRecursively(rootPath);
   const manifest: Manifest = {
     generatedAt: new Date().toISOString(),
@@ -177,8 +183,7 @@ export async function listS3FilesRecursively(prefix: string): Promise<string[]> 
 }
 
 
-export function compareLocalAndS3( localFiles: string[], s3Files: string[], localRoot: string, s3Root: string)
-{
+export function compareLocalAndS3( localFiles: string[], s3Files: string[], localRoot: string, s3Root: string){
 // 
 // Compare local and S3 file lists
 //    localFiles - Array of local file paths (absolute)
@@ -261,7 +266,7 @@ interface ManifestComparison {
 
 export async function compareManifests( folderPath: string, localManifestFile: string, remoteManifestFile: string ): Promise<ManifestComparison | null> {
   functionLog("Initialize Function : compareManifests");
-
+  // 
   try {
     // Read both manifest files
     const localPath = `${folderPath}/${localManifestFile}`;
@@ -360,14 +365,9 @@ export async function compareModifiedFiles(list_modified_files, local_manifest_f
   return {local_latest : latestLocal, remote_latest, latestRemote}
 }
 
-
-
 // ------------------------------------------------------------------------------------------------
 
-
-export async function sync(local_root_folder_path, local_manifest_folder_path, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path){
-  const local_manifest_file_path = `${local_manifest_folder_path}/manifest.json`
-  const s3_manifest_file_path = `${local_manifest_folder_path}/s3_manifest.json`
+export async function generateManifestComparison(local_root_folder_path, local_manifest_file_path, s3_manifest_folder_path, local_manifest_folder_path) {
   // 
   // Create New Manifest
   functionLog('Create New Manifest -------------------------------------------------------------------------------')
@@ -381,7 +381,18 @@ export async function sync(local_root_folder_path, local_manifest_folder_path, s
   functionLog('Compare Manifest Response -------------------------------------------------------------------------')
   const compare_manifest_response =  await compareManifests( local_manifest_folder_path, 'manifest.json', 's3_manifest.json')
   await compare_manifest_response.promise
+  // 
   functionLog(compare_manifest_response)
+  return compare_manifest_response
+}
+
+
+export async function sync(local_root_folder_path, local_manifest_folder_path, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path){
+  const local_manifest_file_path  = `${local_manifest_folder_path}/manifest.json`
+  const s3_manifest_file_path     = `${local_manifest_folder_path}/s3_manifest.json`
+  // 
+  // Compare Local and S3 files
+  compare_manifest_response = generateManifestComparison(local_root_folder_path, local_manifest_file_path, s3_manifest_folder_path, local_manifest_folder_path)
   // 
   // Download Only-In-Remote Files
   functionLog('Download Only-In-Remote Files ---------------------------------------------------------------------')
@@ -397,6 +408,79 @@ export async function sync(local_root_folder_path, local_manifest_folder_path, s
   await downloadListFilesFromS3ToLocalStorage(modified_files_response.remote_latest, s3_data_folder_path, local_root_folder_path)
   await uploadListLocalStorageFilesToS3(modified_files_response.local_latest, local_root_folder_path, s3_data_folder_path)
   // 
-  // upload local manifest to s3
+  // upload new manifest to s3
+  // functionLog('Upload New Manifest To S3 -------------------------------------------------------------------------')
+  // await createLocalManifest(local_root_folder_path, local_manifest_file_path)
   // uploadLocalStorageFilesToS3(local_manifest_file_path, s3_root_folder_path, 's3_manifest.json')
 }
+
+
+export async function forceDownload (local_root_folder_path, local_manifest_file_path, s3_manifest_folder_path, local_manifest_folder_path, s3_data_folder_path) {
+  functionLog("Initialize Function : forceDownload")
+  try{
+    response = await confirmForceDownload()
+    if (response === true) {
+      functionLog('forceDownload - Confirmed')
+      // 
+      // Compare Local and S3 files
+      compare_manifest_response = generateManifestComparison(local_root_folder_path, local_manifest_file_path, s3_manifest_folder_path, local_manifest_folder_path)
+      // 
+      // Download Only-In-Remote Files
+      functionLog('Download Only-In-Remote Files ---------------------------------------------------------------------')
+      await downloadListFilesFromS3ToLocalStorage(compare_manifest_response.onlyInRemote, s3_data_folder_path, local_root_folder_path)
+      // 
+      // Download Remote Version Of Modified Files 
+      functionLog('Download Remote Version Of Modified Files ---------------------------------------------------------')
+      await downloadListFilesFromS3ToLocalStorage(compare_manifest_response.modified, s3_data_folder_path, local_root_folder_path)
+      // 
+      // Remove Only-In-Local Files
+      functionLog('Remove Only-In-Local Files ------------------------------------------------------------------------')
+      await removeListLocalFiles(local_root_folder_path, compare_manifest_response.onlyInLocal)
+    } 
+    else if (response === false){
+      functionLog('forceDownload - Cancel')
+    }
+    functionLog("Terminate Function : forceDownload")
+  } catch (err) {
+    console.error('Download all error:', err);
+    Alert.alert('Error', 'Failed to download all files.');
+  }
+};
+
+
+export async function forceUpload () {
+  functionLog("Initialize Function : forceUpload")
+  try{
+    response = await confirmForceUpload()
+    if (response === true) {
+      functionLog('forceUpload - Confirmed')
+      // // 
+      // // Compare Local and S3 files
+      // compare_manifest_response = generateManifestComparison(local_root_folder_path, local_manifest_file_path, s3_manifest_folder_path, local_manifest_folder_path)
+      // // 
+      // // Upload Only-In-Local Files
+      // functionLog('Upload Only-In-Local Files ------------------------------------------------------------------------')
+      // await uploadListLocalStorageFilesToS3(compare_manifest_response.onlyInLocal, local_root_folder_path, s3_data_folder_path)
+      // // 
+      // // Upload Local Version Of Modified Files
+      // functionLog('Upload Local Version Of Modified Files ------------------------------------------------------------')
+      // modified_files_response = await compareModifiedFiles(compare_manifest_response.modified, local_manifest_file_path, s3_manifest_file_path)
+      // await downloadListFilesFromS3ToLocalStorage(modified_files_response.remote_latest, s3_data_folder_path, local_root_folder_path)
+      // await uploadListLocalStorageFilesToS3(modified_files_response.local_latest, local_root_folder_path, s3_data_folder_path)
+      // // 
+      // // Remove Only-In-Remote Files
+      // functionLog('Remove Only-In-Remote Files -----------------------------------------------------------------------')
+      // await removeListRemoteFiles(s3_data_folder_path, compare_manifest_response.onlyInRemote)
+      // // 
+      // // upload local manifest to s3
+      // // uploadLocalStorageFilesToS3(local_manifest_file_path, s3_root_folder_path, 's3_manifest.json')
+    } 
+    else if (response === false){
+      functionLog('forceUpload - Cancel')
+    }
+    functionLog("Terminate Function : forceUpload")
+  } catch (err) {
+    console.error('Download all error:', err);
+    Alert.alert('Error', 'Failed to download all files.');
+  }
+};

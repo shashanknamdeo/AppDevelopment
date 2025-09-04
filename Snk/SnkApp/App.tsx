@@ -545,13 +545,15 @@ const LOCAL_ROOT_FOLDER_PATH =
     : `${RNFS.DocumentDirectoryPath}/Snk`;
 
 
-const LOCAL_MANIFEST_FILE_PATH =
+const LOCAL_MANIFEST_FOLDER_PATH =
   Platform.OS === 'android'
     ? `${RNFS.ExternalStorageDirectoryPath}/SnkManifest`
     : `${RNFS.DocumentDirectoryPath}/SnkManifest`;
 
 
 export default function App() {
+  const local_manifest_file_path    = `${LOCAL_MANIFEST_FOLDER_PATH}/manifest.json`
+  const local_s3_manifest_file_path = `${LOCAL_MANIFEST_FOLDER_PATH}/s3_manifest.json`
   const [s3_root_folder_path,     setS3RootFolderPath]      = useState<string[]>(""); // public/username
   const [s3_data_folder_path,     setS3DataFolderPath]      = useState<string[]>(""); // public/username/data
   const [s3_manifest_folder_path, setS3ManifestFolderPath]  = useState<string[]>(""); // public/username/manifest.json
@@ -659,9 +661,9 @@ console.log('currentUser.username : ', currentUser.username)
 
           <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path)} />
           <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively(LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path )} />
-          <Button title="Force Download"        onPress={() => forceDownload()} />
+          <Button title="Force Download"        onPress={() => forceDownload (LOCAL_ROOT_FOLDER_PATH, local_manifest_file_path, s3_manifest_folder_path, LOCAL_MANIFEST_FOLDER_PATH, s3_data_folder_path)} />
           <Button title="Force Upload"          onPress={() => forceUpload()} />
-          <Button title="Sync"                  onPress={() => sync(LOCAL_ROOT_FOLDER_PATH, LOCAL_MANIFEST_FILE_PATH, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path)} />
+          <Button title="Sync"                  onPress={() => sync(LOCAL_ROOT_FOLDER_PATH, LOCAL_MANIFEST_FOLDER_PATH, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path)} />
 
         </ScrollView>
       </SafeAreaView>

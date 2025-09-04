@@ -26,6 +26,7 @@ import {
 list, 
 uploadData, 
 getUrl, 
+remove,
 // downloadData, 
  } from 'aws-amplify/storage';
 
@@ -47,7 +48,7 @@ export function sleep(ms) {
 }
 
 
-// ------------------------------------------------------------------------------------------------
+// UPLOAD FUNCTIONS -------------------------------------------------------------------------------
 
 
 function getMimeTypeUsingFileExtension(filename: string){
@@ -179,14 +180,10 @@ export async function uploadLocalStorageFilesToS3Recursively(localPath= LOCAL_RO
 }
 
 
-// ------------------------------------------------------------------------------------------------
+// DOWNLOAD FUNCTIONS -----------------------------------------------------------------------------
 
 
-export async function downloadFileFromS3ToLocalStorage(
-  filename: string | null,
-  source_path: string,
-  destination_path: string
-) {
+export async function downloadFileFromS3ToLocalStorage(filename: string | null, source_path: string, destination_path: string) {
   functionLog("Initialize Function : downloadFileFromS3ToLocalStorage");
   functionLog([filename, source_path, destination_path]);
 
@@ -300,6 +297,7 @@ export async function downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, lo
     await listFilesOfLocalStorage(local_root_folder, setLocalFiles);
 
     functionLog("✅ All files downloaded!");
+    functionLog("Terminate Function : downloadAllFilesFromS3ToLocalRecursively")
   } catch (err) {
     console.error("Download error:", err);
   }
@@ -431,6 +429,50 @@ export async function listS3Files(setS3Files, s3_data_folder_path) {
 };
 
 
-// ------------------------------------------------------------------------------------------------
+// REMOVE (DELETE) FUNCTIONS ----------------------------------------------------------------------
 
+export async function removeListLocalFiles(local_root_path: string, list_relative_files_path: string[]) {
+  functionLog("Initialize Function : removeOnlyInLocalFiles");
+  // 
+  for (const relativePath of list_relative_files_path) {
+    try {
+      const fullPath = `${local_root_path}/${relativePath}`;
+      const exists = await RNFS.exists(fullPath);
 
+      if (exists) {
+        await RNFS.unlink(fullPath);
+        functionLog(`🗑️ Deleted local-only file: ${fullPath}`);
+      } else {
+        functionLog(`⚠️ File not found, skipping: ${fullPath}`);
+      }
+    } catch (err) {
+      console.error("⚠️ Error deleting file:", relativePath, err);
+    }
+  }
+  // 
+  functionLog("Terminate Function : removeOnlyInLocalFiles");
+  return true
+}
+
+/**
+ * Remove files that exist in S3 but not locally (only-in-remote).
+ *
+ * @param s3RootPath Root S3 path (e.g. "public/username/data")
+ * @param onlyInRemoteFiles Array of relative file paths to be deleted from S3
+ */
+export async function removeListRemoteFiles(s3_data_folder_path, list_relative_files_path: string[]) {
+  functionLog("Initialize Function : removeOnlyInRemoteFiles");
+  // 
+  for (const relativePath of onlyInRemoteFiles) {
+    try {
+      const s3FilePath = `${s3RootPath}/${relativePath}`;
+      await remove({ path: s3FilePath });
+      functionLog(`🗑️ Deleted remote-only file: ${s3FilePath}`);
+    } catch (err) {
+      console.error("⚠️ Error deleting S3 file:", relativePath, err);
+    }
+  }
+// 
+  functionLog("Terminate Function : removeOnlyInRemoteFiles");
+  return true
+}
