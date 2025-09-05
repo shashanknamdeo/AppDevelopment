@@ -552,16 +552,14 @@ const LOCAL_MANIFEST_FOLDER_PATH =
 
 
 export default function App() {
-  const local_manifest_file_path    = `${LOCAL_MANIFEST_FOLDER_PATH}/manifest.json`
-  const local_s3_manifest_file_path = `${LOCAL_MANIFEST_FOLDER_PATH}/s3_manifest.json`
-  const [s3_root_folder_path,     setS3RootFolderPath]      = useState<string[]>(""); // public/username
-  const [s3_data_folder_path,     setS3DataFolderPath]      = useState<string[]>(""); // public/username/data
-  const [s3_manifest_folder_path, setS3ManifestFolderPath]  = useState<string[]>(""); // public/username/manifest.json
+  const [path_dict, setPathDict] = useState({})
+  // 
   const [loggedIn, setLoggedIn] = useState(false);
   const [isAmplifyReady, setIsAmplifyReady] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
   const [currentUser, setCurrentUser] = useState<string[]>("");
 
+appLog(LOCAL_MANIFEST_FOLDER_PATH)
 
   useEffect(() => {
     appLog('Amplify configured.');
@@ -574,11 +572,19 @@ export default function App() {
         appLog(['User session found:', currentUser]);
         setCurrentUser(currentUser)
         // 
-        setS3RootFolderPath(`public/${currentUser.username}`)
-        setS3DataFolderPath(`public/${currentUser.username}/data`)
-        setS3ManifestFolderPath(`public/${currentUser.username}`)
+        setPathDict({
+          s3_root_folder_path :     `public/${currentUser.username}`,
+          s3_data_folder_path :     `public/${currentUser.username}/data`,
+          s3_manifest_file_path :   `public/${currentUser.username}/s3_manifest.json`,
+          s3_manifest_folder_path : `public/${currentUser.username}`,
+          // 
+          local_root_folder_path :      LOCAL_ROOT_FOLDER_PATH,
+          local_manifest_folder_path :  LOCAL_MANIFEST_FOLDER_PATH,
+          local_manifest_file_path :    `${LOCAL_MANIFEST_FOLDER_PATH}/manifest.json`,
+          local_s3_manifest_file_path : `${LOCAL_MANIFEST_FOLDER_PATH}/s3_manifest.json`,
+        })
         // 
-        appLog(`s3_root_folder_path : ${s3_root_folder_path}`) // ✅ Runs only after first render
+        appLog(path_dict) // ✅ Runs only after first render
         setLoggedIn(true);
       } catch {
         appLog('No user signed in');
@@ -661,9 +667,9 @@ console.log('currentUser.username : ', currentUser.username)
 
           <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path)} />
           <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively(LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path )} />
-          <Button title="Force Download"        onPress={() => forceDownload (LOCAL_ROOT_FOLDER_PATH, local_manifest_file_path, s3_manifest_folder_path, LOCAL_MANIFEST_FOLDER_PATH, s3_data_folder_path)} />
-          <Button title="Force Upload"          onPress={() => forceUpload()} />
-          <Button title="Sync"                  onPress={() => sync(LOCAL_ROOT_FOLDER_PATH, LOCAL_MANIFEST_FOLDER_PATH, s3_root_folder_path, s3_manifest_folder_path, s3_data_folder_path)} />
+          <Button title="Force Download"        onPress={() => forceDownload (path_dict)} />
+          <Button title="Force Upload"          onPress={() => forceUpload (path_dict)} />
+          <Button title="Sync"                  onPress={() => sync(path_dict)} />
 
         </ScrollView>
       </SafeAreaView>

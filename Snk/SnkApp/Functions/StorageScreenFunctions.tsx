@@ -90,7 +90,7 @@ export async function uploadLocalStorageFilesToS3(filename, source_path, destina
 //    Uploads it to a storage service (uploadData) with the right MIME type.
 //    Logs success or error.
   functionLog("Initialize Function : uploadLocalStorageFilesToS3");
-
+  functionLog([filename, source_path, destination_path])
   try {
     let source_file_path: string;
     let destination_file_path: string;
@@ -104,7 +104,7 @@ export async function uploadLocalStorageFilesToS3(filename, source_path, destina
     }
     // 
     const fileUri = source_file_path.startsWith("file://") ? source_file_path : `file://${source_file_path}`;
-
+    functionLog(fileUri)
     // Read local file as blob
     const response = await fetch(fileUri);
     const blob = await response.blob();
@@ -183,7 +183,11 @@ export async function uploadLocalStorageFilesToS3Recursively(localPath= LOCAL_RO
 // DOWNLOAD FUNCTIONS -----------------------------------------------------------------------------
 
 
-export async function downloadFileFromS3ToLocalStorage(filename: string | null, source_path: string, destination_path: string) {
+export async function downloadFileFromS3ToLocalStorage(
+  filename: string | null,
+  source_path: string,
+  destination_path: string
+) {
   functionLog("Initialize Function : downloadFileFromS3ToLocalStorage");
   functionLog([filename, source_path, destination_path]);
 
@@ -200,6 +204,17 @@ export async function downloadFileFromS3ToLocalStorage(filename: string | null, 
     }
 
     functionLog(`Downloading : ${source_file_path}`);
+
+    // Ensure destination directory exists
+    const destinationDir = destination_file_path.substring(
+      0,
+      destination_file_path.lastIndexOf("/")
+    );
+
+    const dirExists = await RNFS.exists(destinationDir);
+    if (!dirExists) {
+      await RNFS.mkdir(destinationDir);
+    }
 
     // Get a signed URL for the file
     const { url } = await getUrl({ path: source_file_path });
@@ -223,10 +238,11 @@ export async function downloadFileFromS3ToLocalStorage(filename: string | null, 
 
 
 export async function downloadListFilesFromS3ToLocalStorage(s3_files_list, source_path, destination_Path) {
-  functionLog("Initialize Function : downloadAllFilesFromS3ToLocalStorage")
+  functionLog("Initialize Function : downloadListFilesFromS3ToLocalStorage")
   try {
     if (s3_files_list.length === 0) {
       Alert.alert('No files', 'No files found in S3 to download.');
+      functionLog('No files found in S3 to download.')
       return;
     }
 
@@ -235,9 +251,10 @@ export async function downloadListFilesFromS3ToLocalStorage(s3_files_list, sourc
     }
 
     Alert.alert('Success', 'All Listed files downloaded Locally.');
-    functionLog("Terminate Function : downloadAllFilesFromS3ToLocalStorage")
+    functionLog("Terminate Function : downloadListFilesFromS3ToLocalStorage")
   } catch (err) {
-    console.error('Download all error:', err);
+    functionLog(`s3_files_list : ${s3_files_list} || source_path : ${source_path} || destination_Path : ${destination_Path}`)
+    console.error('Download List File error:', err);
     Alert.alert('Error', 'Failed to download all files.');
   }
 };
@@ -462,17 +479,21 @@ export async function removeListLocalFiles(local_root_path: string, list_relativ
  */
 export async function removeListRemoteFiles(s3_data_folder_path, list_relative_files_path: string[]) {
   functionLog("Initialize Function : removeOnlyInRemoteFiles");
-  // 
-  for (const relativePath of onlyInRemoteFiles) {
-    try {
-      const s3FilePath = `${s3RootPath}/${relativePath}`;
-      await remove({ path: s3FilePath });
-      functionLog(`🗑️ Deleted remote-only file: ${s3FilePath}`);
-    } catch (err) {
-      console.error("⚠️ Error deleting S3 file:", relativePath, err);
+  try{
+    for (const relativePath of list_relative_files_path) {
+      try {
+        const s3FilePath = `${s3_data_folder_path}/${relativePath}`;
+        await remove({ path: s3FilePath });
+        functionLog(`🗑️ Deleted remote-only file: ${s3FilePath}`);
+      } catch (err) {
+        console.error("⚠️ Error deleting S3 file:", relativePath, err);
+      }
     }
+    // 
+    functionLog("Terminate Function : removeOnlyInRemoteFiles");
+    return true
+  } catch {
+    console.error('removeListRemoteFiles :', err);
+    Alert.alert('Error', 'Failed to removeListRemoteFiles.');
   }
-// 
-  functionLog("Terminate Function : removeOnlyInRemoteFiles");
-  return true
 }
