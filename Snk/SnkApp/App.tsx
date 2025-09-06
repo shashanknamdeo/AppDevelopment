@@ -497,12 +497,14 @@ import 'react-native-url-polyfill/auto';
 import React, { useState, useEffect } from 'react';
 
 import {
+  Image,
   SafeAreaView,
   View,
   Text,
   Button,
   ScrollView,
   Alert,
+  StyleSheet,
   // PermissionsAndroid,
   // Platform,
   TouchableOpacity,
@@ -514,26 +516,28 @@ import awsExports from './src/aws-exports';
 import { list, downloadData, getUrl } from 'aws-amplify/storage';
 
 import { signOut, getCurrentUser } from 'aws-amplify/auth';   // ✅ Import getCurrentUser
-import AuthScreen from './src/AuthScreen';
 import RNFS from 'react-native-fs';
 import { pick, types, isCancel } from '@react-native-documents/picker';
 
 import {
   requestStoragePermission,
-  uploadLocalStorageFilesToS3,
-  uploadLocalStorageFilesToS3Recursively,
-  downloadAllFilesFromS3ToLocalRecursively,
+//   uploadLocalStorageFilesToS3,
+//   uploadLocalStorageFilesToS3Recursively,
+//   downloadAllFilesFromS3ToLocalRecursively,
 } from "./Functions/StorageScreenFunctions";
 
-import{
-  sync,
-  forceUpload,
-  forceDownload,
-} from "./Functions/SyncFunctions";
+// import{
+//   sync,
+//   forceUpload,
+//   forceDownload,
+// } from "./Functions/SyncFunctions";
 
+import { SyncUI } from "./UI/SyncUI";
+import { AuthUI } from './UI/AuthUI';
+
+import { LoadingUI } from "./UI/LoadingUI";
 
 import {appLog} from "./Functions/Logger"
-
 
 
 Amplify.configure(awsExports);
@@ -617,64 +621,39 @@ appLog(LOCAL_MANIFEST_FOLDER_PATH)
 
 
 
-console.log('currentUser.username : ', currentUser.username)
 
+// ------------------------------------------------------------------------------------------------
 
-  if (!isAmplifyReady || loadingAuth) {
-    return (
-      <SafeAreaView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text>Loading...</Text>
-      </SafeAreaView>
-    );
-  }
+// ------------------------------------------------------------------------------------------------
 
-  if (loggedIn) {
-    return (
-      <SafeAreaView style={{ flex: 1, padding: 20 }}>
-        {/* ✅ Top bar with Logout button */}
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            marginBottom: 10,
-          }}
-        >
-          <TouchableOpacity
-            onPress={async () => {
-              try {
-                await signOut();
-                setLoggedIn(false);
-              } catch (err) {
-                console.error('Sign out error:', err);
-              }
-            }}
-            style={{
-              backgroundColor: '#ff4d4d',
-              paddingVertical: 6,
-              paddingHorizontal: 12,
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ color: 'white', fontWeight: 'bold' }}>Log Out</Text>
-          </TouchableOpacity>
-        </View>
+// LoadingUI
+if (!isAmplifyReady || loadingAuth) {
+  return <LoadingUI />;
+}
 
-        <ScrollView contentContainerStyle={{ gap: 12 }}>
-          <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 10 }}>
-            Snk Storage Sync
-          </Text>
+// SyncUI (after login)
+if (loggedIn) {
+  return (
+    <SyncUI
+      path_dict={path_dict}
+      onLogout={async () => {
+        try {
+          await signOut();
+          setLoggedIn(false);
+        } catch (err) {
+          console.error("Sign out error:", err);
+        }
+      }}
+    />
+  );
+}
 
-          <Button title="Download All from S3"  onPress={() => downloadAllFilesFromS3ToLocalRecursively(setLocalFiles, LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path)} />
-          <Button title="Upload Folder to S3"   onPress={() => uploadLocalStorageFilesToS3Recursively(LOCAL_ROOT_FOLDER_PATH, s3_data_folder_path )} />
-          <Button title="Force Download"        onPress={() => forceDownload (path_dict)} />
-          <Button title="Force Upload"          onPress={() => forceUpload (path_dict)} />
-          <Button title="Sync"                  onPress={() => sync(path_dict)} />
+return (
+  <AuthUI
+    onSignIn={() => {
+      setLoggedIn(true);
+    }}
+  />
+);
 
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  return <AuthScreen onSignIn={() => setLoggedIn(true)} />;
 }

@@ -1,76 +1,90 @@
 import { Alert } from "react-native";
 import { uiLog } from "../Functions/Logger";
 
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import React from "react";
+
+import {
+  View,
+  Text,
+  Image,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+} from "react-native";
+
+import TopBar from "./Components/TopBarUI";
+
+import { sync, forceUpload, forceDownload } from "../Functions/SyncFunctions";
 
 // ------------------------------------------------------------------------------------------------
 
-const SyncScreen = () => {
+export const SyncUI = ({ path_dict, onLogout }: any) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Snk</Text>
-      <Text style={styles.subtitle}>Keep your files up to date</Text>
+    <SafeAreaView style={styles.container}>
+      {/* ✅ Top Bar */}
+      <TopBar onLogout={onLogout} />
 
-      <TouchableOpacity style={[styles.button, styles.syncButton]}>
-        <Text style={styles.buttonText}>Sync</Text>
-      </TouchableOpacity>
+      {/* ✅ Buttons Section */}
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
+          onPress={() => sync(path_dict)}
+        >
+          <Image
+            source={require("../Icons/CloudSyncIcon.png")}
+            style={{ width: 24, height: 24, marginRight: 8 }}
+          />
+          <Text style={styles.buttonText}>Sync</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.button, styles.uploadButton]}>
-        <Text style={styles.buttonText}>Force Upload</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
+          onPress={() => forceUpload(path_dict)}
+        >
+          <Image
+            source={require("../Icons/CloudUploadIcon.png")}
+            style={{ width: 24, height: 24, marginRight: 8 }}
+          />
+          <Text style={styles.buttonText}>Force Upload</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.button, styles.downloadButton]}>
-        <Text style={styles.buttonText}>Force Download</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
+          onPress={() => forceDownload(path_dict)}
+        >
+          <Image
+            source={require("../Icons/CloudDownloadIcon.png")}
+            style={{ width: 24, height: 24, marginRight: 8 }}
+          />
+          <Text style={styles.buttonText}>Force Download</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-export default SyncScreen;
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F9FAFB",
+  container: { flex: 1, backgroundColor: "#f9f9f9" },
+  scroll: { padding: 20, gap: 15 },
+  actionButton: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 20,
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    marginBottom: 10,
-    color: "#111827",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 40,
-  },
-  button: {
-    width: "80%",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    marginVertical: 10,
-    elevation: 3, // shadow for Android
-  },
-  syncButton: {
-    backgroundColor: "#3B82F6", // blue
-  },
-  uploadButton: {
-    backgroundColor: "#10B981", // green
-  },
-  downloadButton: {
-    backgroundColor: "#F59E0B", // amber
+    paddingVertical: 14,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    paddingHorizontal: 16,
   },
   buttonText: {
     color: "white",
+    fontWeight: "bold",
     fontSize: 16,
-    fontWeight: "600",
   },
 });
-
 
 
 
