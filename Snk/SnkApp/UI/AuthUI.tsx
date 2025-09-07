@@ -1,5 +1,6 @@
-// UI/AuthScreen.tsx
+
 import React, { useState } from "react";
+
 import {
   View,
   Text,
@@ -11,126 +12,26 @@ import {
 
 import {
   handleSignIn,
-  authSignUp,
-  authConfirmSignUp,
-  authResendSignUp,
-  authResetPassword,
-  authConfirmResetPassword,
+  handleSignUp,
+  handleConfirmOtp,
+  handleResendOtp,
+  handleForgotPassword,
 } from "../Functions/AuthFunctions";
+
+// ------------------------------------------------------------------------------------------------
 
 export function AuthUI({ onSignIn }: { onSignIn: () => void }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [mode, setMode] = useState<
-    "signIn" | "signUp" | "forgotPassword" | "confirmOtp"
-  >("signIn");
-
+  const [mode, setMode] = useState< "signIn" | "signUp" | "forgotPassword" | "confirmOtp" >("signIn");
+  // 
   const [otpType, setOtpType] = useState<"signUp" | "resetPassword">("signUp");
   const [loading, setLoading] = useState(false);
-
-  const isValidEmail = (email: string) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.toLowerCase());
-
-
-
-  // ---- Sign Up ----
-  async function handleSignUp() {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert("Error", "Email and password are required for sign up");
-      return;
-    }
-    if (!isValidEmail(email)) {
-      Alert.alert("Error", "Please enter a valid email address");
-      return;
-    }
-
-    try {
-      await authSignUp(email, password);
-      Alert.alert("Success", "Sign up successful! Please check your email for OTP.");
-      setMode("confirmOtp");
-      setOtpType("signUp");
-    } catch (err: any) {
-      console.log("Sign up error", err);
-      Alert.alert("Error", err.message || "Failed to sign up");
-    }
-  };
-
-  // ---- Confirm OTP ----
-  async function handleConfirmOtp() {
-    if (!email.trim() || !otp.trim()) {
-      Alert.alert("Error", "OTP is required");
-      return;
-    }
-
-    try {
-      if (otpType === "signUp") {
-        await authConfirmSignUp(email, otp);
-        Alert.alert("Success", "Account confirmed! You can now sign in.");
-      } else {
-        if (!newPassword.trim()) {
-          Alert.alert("Error", "Please enter a new password");
-          return;
-        }
-        await authConfirmResetPassword(email, otp, newPassword);
-        Alert.alert("Success", "Password reset successful! You can now sign in.");
-        setPassword("");
-      }
-
-      setMode("signIn");
-      setOtp("");
-      setNewPassword("");
-    } catch (err: any) {
-      console.log("OTP confirm error", err);
-      if (
-        otpType === "signUp" &&
-        err.code === "NotAuthorizedException" &&
-        err.message.includes("Current status is CONFIRMED")
-      ) {
-        Alert.alert("Info", "User is already confirmed. You can sign in.");
-        setMode("signIn");
-      } else {
-        Alert.alert("Error", err.message || "OTP confirmation failed");
-      }
-    }
-  };
-
-  // ---- Resend OTP ----
-  async function handleResendOtp() {
-    if (!email.trim()) {
-      Alert.alert("Error", "Email is missing. Cannot resend OTP.");
-      return;
-    }
-    try {
-      await authResendSignUp(email);
-      Alert.alert("Success", "A new OTP has been sent to your email.");
-    } catch (err: any) {
-      console.log("Resend OTP error", err);
-      Alert.alert("Error", err.message || "Failed to resend OTP");
-    }
-  };
-
-  // ---- Forgot Password ----
-  async function handleForgotPassword() {
-    if (!email.trim()) {
-      Alert.alert("Missing email", "Please enter your email.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await authResetPassword(email);
-      Alert.alert("Reset code sent", "Check your email for the reset code.");
-      setMode("confirmOtp");
-      setOtpType("resetPassword");
-    } catch (err: any) {
-      Alert.alert("Error sending reset code", err?.message ?? JSON.stringify(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 
+  console.log('AuthUI')
+  // 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
@@ -187,31 +88,31 @@ export function AuthUI({ onSignIn }: { onSignIn: () => void }) {
               style={styles.input}
             />
           )}
-          <TouchableOpacity onPress={handleConfirmOtp} style={styles.button}>
+          <TouchableOpacity onPress={() => handleConfirmOtp( email, otp, newPassword, otpType, setMode, setOtp, setNewPassword, setPassword)} style={styles.button}>
             <Text style={styles.buttonText}>
               {otpType === "signUp" ? "Confirm OTP" : "Reset Password"}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleResendOtp} style={styles.resendButton}>
+          <TouchableOpacity onPress={() => handleResendOtp(email)} style={styles.resendButton}>
             <Text style={styles.resendText}>Resend OTP</Text>
           </TouchableOpacity>
         </>
       )}
 
       {mode === "signIn" && (
-        <TouchableOpacity onPress={handleSignIn} style={styles.button}>
+        <TouchableOpacity onPress={() => handleSignIn(email, password, onSignIn, setMode)} style={styles.button}>
           <Text style={styles.buttonText}>Sign In</Text>
         </TouchableOpacity>
       )}
 
       {mode === "signUp" && (
-        <TouchableOpacity onPress={handleSignUp} style={styles.button}>
+        <TouchableOpacity onPress={() => handleSignUp(email, password, setMode, setOtpType)} style={styles.button}>
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
       )}
 
       {mode === "forgotPassword" && (
-        <TouchableOpacity onPress={handleForgotPassword} style={styles.button}>
+        <TouchableOpacity onPress={() => handleForgotPassword(email, setMode, setOtpType, setLoading )} style={styles.button}>
           <Text style={styles.buttonText}>Send Reset Code</Text>
         </TouchableOpacity>
       )}
