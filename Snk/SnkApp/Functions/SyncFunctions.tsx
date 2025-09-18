@@ -89,7 +89,7 @@ export async function createLocalManifest(path_dict){
         console.warn(`Error createLocalManifest : ⚠️ Could not process file: ${file}`, err);
       }
     }
-    functionLog(`manifest : ${JSON.stringify(manifest.files, null, 2)}`)
+    functionLog(['Local Manifest :', JSON.stringify(manifest.files, null, 2)])
     // Save manifest JSON file
     await RNFS.writeFile(path_dict.local_manifest_file_path, JSON.stringify(manifest, null, 2), 'utf8');
     console.log(`✅ Local manifest created at: ${path_dict.local_manifest_file_path}`);
