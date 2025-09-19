@@ -1,6 +1,16 @@
 // Functions/AutoSyncFunctions.tsx
-import { useEffect, useRef } from "react";
-import { AppState, AppStateStatus } from "react-native";
+
+import { 
+  useEffect, 
+  useRef
+  } from "react";
+
+import { 
+  AppState, 
+  AppStateStatus,
+  Alert,
+  } from "react-native";
+
 import NetInfo from "@react-native-community/netinfo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -51,16 +61,23 @@ export function useAutoSync(
     functionLog("Initialize Function : doSync");
     if (!enabled) return;
     if (!path_dict?.local_root_folder_path || !path_dict?.s3_data_folder_path) return;
-    if (isSyncingRef.current) return;
     // 
+    if (isSyncingRef.current) {
+    functionLog("Skipped: another sync already in progress");
+    Alert.alert("Sync in Progress", "Auto Sync tried to start syncing while another sync was already running");
+    return;
+    }
+    // 
+    let state;
     try {
-      const state = await NetInfo.fetch();
+      state = await NetInfo.fetch();
       if (!state.isConnected) {
         functionLog("AutoSync skipped: offline");
         return;
       }
       if (wifiOnly && state.type !== "wifi") {
         functionLog("AutoSync skipped: not on wifi");
+        Alert.alert("Auto Sync skipped", "Not conected to Wi-Fi");
         return;
       }
     } catch (e) {
@@ -68,6 +85,7 @@ export function useAutoSync(
     }
     // 
     try {
+      functionLog(`Start doSync - Internet Status : ${state} | Internet Type : ${state.type} | Wi-Fi Setting : ${wifiOnly} `)
       isSyncingRef.current = true;
       onStatus?.("syncing");
       functionLog("AutoSync: starting sync()");
@@ -110,7 +128,6 @@ export function useAutoSync(
         if (elapsed >= intervalMs) {
           // Overdue → run now
           functionLog("Last sync overdue — running immediately");
-          functionLog(``)
           // 
           await doSync(`now : ${now} | lastSync : ${lastSync} | elapsed : ${elapsed} | intervalMs : ${intervalMs}`);
           // 
@@ -288,85 +305,3 @@ export function useAutoSync(
 
 
 // ===================================================================================================
-
-
-// // Functions/AutoSyncFunctions.tsx
-// import { useEffect, useRef } from "react";
-// import { AppState, AppStateStatus } from "react-native";
-// import NetInfo from "@react-native-community/netinfo";
-
-// import { sync } from "./SyncFunctions";
-// import { functionLog } from "./Logger";
-
-// type AutoSyncOptions = {
-//   intervalMs?: number;   // default 5 min
-//   wifiOnly?: boolean;    // default false
-//   onStatus?: (status: "idle" | "syncing" | "error") => void;
-// };
-
-// export async function useAutoSync( path_dict: any, enabled: boolean, opts: AutoSyncOptions = {} ) {
-//   functionLog("####################################################################################################")
-//   functionLog("Initialize Function : autoSync")
-//   const { intervalMs = 5 * 60 * 1000, wifiOnly = false, onStatus } = opts;
-
-//   const isSyncingRef = useRef(false);
-//   const intervalRef = useRef<any>(null);
-//   const lastForegroundSyncRef = useRef<number>(0);
-
-//   async function doSync() {
-//     if (!enabled) return;
-//     if (!path_dict?.local_root_folder_path || !path_dict?.s3_data_folder_path) return;
-//     if (isSyncingRef.current) return;
-
-//     try {
-//       const state = await NetInfo.fetch();
-//       if (!state.isConnected) {
-//         functionLog("AutoSync skipped: offline");
-//         return;
-//       }
-//       if (wifiOnly && state.type !== "wifi") {
-//         functionLog("AutoSync skipped: not on wifi");
-//         return;
-//       }
-//     } catch (e) {
-//       functionLog("AutoSync NetInfo error", e);
-//     }
-
-//     try {
-//       isSyncingRef.current = true;
-//       onStatus?.("syncing");
-//       functionLog("AutoSync: starting sync()");
-//       await sync(path_dict);
-//       functionLog("AutoSync: sync() finished");
-//       onStatus?.("idle");
-//     } catch (err) {
-//       console.error("AutoSync error:", err);
-//       onStatus?.("error");
-//     } finally {
-//       isSyncingRef.current = false;
-//     }
-//   }
-
-//   useEffect(() => {
-//     if (!enabled) {
-//       if (intervalRef.current) clearInterval(intervalRef.current);
-//       return;
-//     }
-
-//     // Periodic sync
-//     intervalRef.current = setInterval(() => {
-//       doSync();
-//     }, intervalMs);
-
-//     return () => {
-//       if (intervalRef.current) clearInterval(intervalRef.current);
-//       try {
-//         sub.remove();
-//       } catch {}
-//     };
-//   }, [enabled, path_dict, intervalMs, wifiOnly]);
-// functionLog("Terminate Function : autoSync")
-// }
-
-
-// // this is my AutoSyncFunctions do only required changes and give me full code

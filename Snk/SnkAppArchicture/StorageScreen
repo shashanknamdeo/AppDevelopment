@@ -138,8 +138,3 @@ recursively select the file
                     Keep both (rename one, e.g., file (conflict).jpg).
                     Ask user.
 
-
-at Autosync
-
-connect AutoSync duration UI (Days , Hours, Minutes) with Autosync
-when Sync manually set last sync time 

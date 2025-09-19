@@ -1,3 +1,4 @@
+// this is my SyncUI do only required changes and give me full code
 import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -18,23 +19,26 @@ import { sync, forceUpload, forceDownload } from "../Functions/SyncFunctions";
 
 export const SyncUI = ({ path_dict, onLogout }: any) => {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [wifiOnly, setWifiOnly] = useState(false);
   const [status, setStatus] = useState<"idle" | "syncing" | "error">("idle");
   const [intervalMs, setIntervalMs] = useState<number>(24 * 60 * 60 * 1000); // default 24h
   const [draftInterval, setDraftInterval] = useState<number>(24 * 60 * 60 * 1000);
   const [intervalPopupVisible, setIntervalPopupVisible] = useState(false);
   const [lastSync, setLastSync] = useState<number | null>(null);
 
-  // Load saved interval when app opens
+  // Load saved settings
   useEffect(() => {
     (async () => {
       try {
-        const saved = await AsyncStorage.getItem("snk_intervalMs");
-        if (saved) {
-          setIntervalMs(Number(saved));
-          setDraftInterval(Number(saved));
+        const savedInterval = await AsyncStorage.getItem("snk_intervalMs");
+        if (savedInterval !== null) {
+          setIntervalMs(Number(savedInterval));
+          setDraftInterval(Number(savedInterval));
         }
+        const savedWifi = await AsyncStorage.getItem("snk_wifiOnly");
+        if (savedWifi !== null) setWifiOnly(savedWifi === "true");
       } catch (e) {
-        console.error("Error loading interval:", e);
+        console.error("Error loading settings:", e);
       }
     })();
   }, []);
@@ -65,7 +69,7 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
   // AutoSync Hook
   useAutoSync(path_dict, autoSyncEnabled, {
     intervalMs,
-    wifiOnly: false,
+    wifiOnly,
     onStatus: setStatus,
   });
 
@@ -97,12 +101,36 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
       <View style={styles.card}>
         <View style={styles.autoSyncRow}>
           <Text style={styles.cardLabel}>Auto Sync</Text>
-          <Switch value={autoSyncEnabled} onValueChange={setAutoSyncEnabled} />
+          <Switch
+            value={autoSyncEnabled}
+            onValueChange={async (val) => {
+              setAutoSyncEnabled(val);
+              try {
+                await AsyncStorage.setItem("snk_autoSyncEnabled", String(val));
+              } catch (e) {
+                console.error("Error saving autoSyncEnabled:", e);
+              }
+            }}
+          />
         </View>
 
-        {/* Show details only if Auto Sync is enabled */}
         {autoSyncEnabled && (
           <>
+            <View style={styles.autoSyncRow}>
+              <Text style={styles.cardLabel}>Wi-Fi Only</Text>
+              <Switch
+                value={wifiOnly}
+                onValueChange={async (val) => {
+                  setWifiOnly(val);
+                  try {
+                    await AsyncStorage.setItem("snk_wifiOnly", String(val));
+                  } catch (e) {
+                    console.error("Error saving wifiOnly:", e);
+                  }
+                }}
+              />
+            </View>
+
             <View style={styles.autoSyncRow}>
               <Text style={styles.cardLabel}>Status</Text>
               <View
@@ -125,7 +153,6 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
               </View>
             )}
 
-            {/* Interval Selector */}
             <TouchableOpacity
               style={styles.intervalRow}
               onPress={() => {
@@ -230,6 +257,7 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
   );
 };
 
+// Styles remain unchanged
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 16 },
@@ -323,6 +351,8 @@ const styles = StyleSheet.create({
 });
 
 
+
+
 // import React, { useState, useEffect } from "react";
 // import {
 //   SafeAreaView,
@@ -344,22 +374,27 @@ const styles = StyleSheet.create({
 // export const SyncUI = ({ path_dict, onLogout }: any) => {
 //   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
 //   const [status, setStatus] = useState<"idle" | "syncing" | "error">("idle");
-//   const [intervalMs, setIntervalMs] = useState(24 * 60 * 60 * 1000); // <-- can give problem when reopen the app
-//   const [draftInterval, setDraftInterval] = useState(intervalMs);
+//   const [intervalMs, setIntervalMs] = useState<number>(24 * 60 * 60 * 1000); // default 24h
+//   const [draftInterval, setDraftInterval] = useState<number>(24 * 60 * 60 * 1000);
 //   const [intervalPopupVisible, setIntervalPopupVisible] = useState(false);
 //   const [lastSync, setLastSync] = useState<number | null>(null);
 
+//   // Load saved interval when app opens
 //   useEffect(() => {
 //     (async () => {
 //       try {
 //         const saved = await AsyncStorage.getItem("snk_intervalMs");
-//         if (saved) setIntervalMs(Number(saved));
+//         if (saved) {
+//           setIntervalMs(Number(saved));
+//           setDraftInterval(Number(saved));
+//         }
 //       } catch (e) {
 //         console.error("Error loading interval:", e);
 //       }
 //     })();
 //   }, []);
 
+//   // Save interval when changed
 //   useEffect(() => {
 //     (async () => {
 //       try {
@@ -370,6 +405,7 @@ const styles = StyleSheet.create({
 //     })();
 //   }, [intervalMs]);
 
+//   // Load last sync time
 //   useEffect(() => {
 //     (async () => {
 //       try {
@@ -381,12 +417,14 @@ const styles = StyleSheet.create({
 //     })();
 //   }, [status]);
 
+//   // AutoSync Hook
 //   useAutoSync(path_dict, autoSyncEnabled, {
 //     intervalMs,
 //     wifiOnly: false,
 //     onStatus: setStatus,
 //   });
 
+//   // Convert ms to d/h/m
 //   const msToDHMS = (ms: number) => {
 //     const days = Math.floor(ms / (24 * 60 * 60 * 1000));
 //     const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
@@ -497,8 +535,7 @@ const styles = StyleSheet.create({
 //               <TouchableOpacity
 //                 style={styles.modalButton}
 //                 onPress={() => {
-//                   if (draftInterval < 60 * 1000) setIntervalMs(60 * 1000);
-//                   else setIntervalMs(draftInterval);
+//                   setIntervalMs(Math.max(draftInterval, 60 * 1000));
 //                   setIntervalPopupVisible(false);
 //                 }}
 //               >
@@ -639,6 +676,7 @@ const styles = StyleSheet.create({
 //   },
 //   modalButton: { padding: 10 },
 // });
+
 
 
 // this is my syncUI do only required changes and give me full code
