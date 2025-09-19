@@ -32,7 +32,7 @@ export function useAutoSync(
 ) {
   functionLog("Initialize Function : autoSync");
   // functionLog(`intervalMs : ${intervalMs}`)
-  const { intervalMs = 1 * 60 * 1000, wifiOnly = false, onStatus } = opts;
+  const { intervalMs = 1 * 60 * 1000, wifiOnly = true, onStatus } = opts;
 
   const isSyncingRef = useRef(false);
   const intervalRef = useRef<any>(null);
