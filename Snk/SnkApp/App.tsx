@@ -1,4 +1,181 @@
 
+console.log("===================================================================================================")
+
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
+
+import React, { useState, useEffect } from 'react';
+
+import {
+  Image,
+  SafeAreaView,
+  View,
+  Text,
+  Button,
+  ScrollView,
+  Alert,
+  StyleSheet,
+  // PermissionsAndroid,
+  // Platform,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+
+import { Amplify } from 'aws-amplify';
+import awsExports from './src/aws-exports';
+import { list, downloadData, getUrl } from 'aws-amplify/storage';
+
+import { signOut, getCurrentUser } from 'aws-amplify/auth';   // ✅ Import getCurrentUser
+import RNFS from 'react-native-fs';
+import { pick, types, isCancel } from '@react-native-documents/picker';
+
+import {
+  requestStoragePermission,
+//   uploadLocalStorageFilesToS3,
+//   uploadLocalStorageFilesToS3Recursively,
+//   downloadAllFilesFromS3ToLocalRecursively,
+} from "./Functions/StorageScreenFunctions";
+
+// import{
+//   sync,
+//   forceUpload,
+//   forceDownload,
+// } from "./Functions/SyncFunctions";
+
+import { SyncUI } from "./UI/SyncUI";
+import { AuthUI } from './UI/AuthUI';
+
+import { LoadingUI } from "./UI/LoadingUI";
+
+import {appLog} from "./Functions/Logger"
+
+
+Amplify.configure(awsExports);
+
+// ✅ Use external storage for Android so folder shows in File Manager
+const LOCAL_ROOT_FOLDER_PATH =
+  Platform.OS === 'android'
+    ? `${RNFS.ExternalStorageDirectoryPath}/Snk`
+    : `${RNFS.DocumentDirectoryPath}/Snk`;
+
+
+// const LOCAL_MANIFEST_FOLDER_PATH =
+//   Platform.OS === 'android'
+//     ? `${RNFS.ExternalStorageDirectoryPath}/SnkManifest`
+//     : `${RNFS.DocumentDirectoryPath}/SnkManifest`;
+
+// ✅ Private internal storage path for manifest files
+const LOCAL_MANIFEST_FOLDER_PATH = `${RNFS.DocumentDirectoryPath}/SnkManifest`;
+
+export default function App() {
+  const [path_dict, setPathDict] = useState({})
+  // 
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [isAmplifyReady, setIsAmplifyReady] = useState(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
+  const [currentUser, setCurrentUser] = useState<string[]>("");
+
+appLog(LOCAL_MANIFEST_FOLDER_PATH)
+
+  useEffect(() => {
+    appLog('Amplify configured.');
+    setIsAmplifyReady(true);
+
+    // ✅ Check if user already signed in
+    const checkUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        appLog(['User session found:', currentUser]);
+        setCurrentUser(currentUser)
+        // 
+        setPathDict({
+          s3_root_folder_path :     `public/${currentUser.username}`,
+          s3_data_folder_path :     `public/${currentUser.username}/data`,
+          s3_manifest_file_path :   `public/${currentUser.username}/s3_manifest.json`,
+          s3_manifest_folder_path : `public/${currentUser.username}`,
+          // 
+          local_root_folder_path :      LOCAL_ROOT_FOLDER_PATH,
+          local_manifest_folder_path :  LOCAL_MANIFEST_FOLDER_PATH,
+          local_manifest_file_path :    `${LOCAL_MANIFEST_FOLDER_PATH}/manifest.json`,
+          local_s3_manifest_file_path : `${LOCAL_MANIFEST_FOLDER_PATH}/s3_manifest.json`,
+        })
+        // 
+        appLog(path_dict) // ✅ Runs only after first render
+        setLoggedIn(true);
+      } catch {
+        appLog('No user signed in');
+        setLoggedIn(false);
+      } finally {
+        setLoadingAuth(false);
+      }
+    };
+
+    checkUser();
+  }, []);
+
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const hasPermission = await requestStoragePermission();
+        if (!hasPermission) {
+          Alert.alert('Permission required', 'Storage access is needed.');
+          return;
+        }
+        // 
+        // ✅ Ensure Root folder exists
+        const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER_PATH);
+        if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER_PATH);
+      // 
+      // ✅ Ensure manifest folder exists
+      const manifestExists = await RNFS.exists(LOCAL_MANIFEST_FOLDER_PATH);
+      if (!manifestExists) await RNFS.mkdir(LOCAL_MANIFEST_FOLDER_PATH);
+      // 
+      } catch (err) {
+        console.error('Error creating folder:', err);
+      }
+    })();
+  }, []);
+
+
+// ------------------------------------------------------------------------------------------------
+
+// LoadingUI
+if (!isAmplifyReady || loadingAuth) {
+  return <LoadingUI />;
+}
+
+// SyncUI (after login)
+if (loggedIn) {
+  return (
+    <SyncUI
+      path_dict={path_dict}
+      onLogout={async () => {
+        try {
+          await signOut();
+          setLoggedIn(false);
+        } catch (err) {
+          console.error("Sign out error:", err);
+        }
+      }}
+    />
+  );
+}
+
+return (
+  <AuthUI
+    onSignIn={() => {
+      setLoggedIn(true);
+    }}
+  />
+);
+
+}
+
+
+// ==============================================================================================
+
+
 // import React from "react";
 // import { SafeAreaView } from "react-native";
 // import { Amplify } from "aws-amplify";
@@ -16,9 +193,6 @@
 //     </SafeAreaView>
 //   );
 // }
-
-
-// ================================================================================================
 
 // import 'react-native-get-random-values';
 // import 'react-native-url-polyfill/auto';
@@ -485,171 +659,3 @@
 // }
 
 
-// ==============================================================================================
-
-
-
-console.log("===================================================================================================")
-
-import 'react-native-get-random-values';
-import 'react-native-url-polyfill/auto';
-
-import React, { useState, useEffect } from 'react';
-
-import {
-  Image,
-  SafeAreaView,
-  View,
-  Text,
-  Button,
-  ScrollView,
-  Alert,
-  StyleSheet,
-  // PermissionsAndroid,
-  // Platform,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
-
-import { Amplify } from 'aws-amplify';
-import awsExports from './src/aws-exports';
-import { list, downloadData, getUrl } from 'aws-amplify/storage';
-
-import { signOut, getCurrentUser } from 'aws-amplify/auth';   // ✅ Import getCurrentUser
-import RNFS from 'react-native-fs';
-import { pick, types, isCancel } from '@react-native-documents/picker';
-
-import {
-  requestStoragePermission,
-//   uploadLocalStorageFilesToS3,
-//   uploadLocalStorageFilesToS3Recursively,
-//   downloadAllFilesFromS3ToLocalRecursively,
-} from "./Functions/StorageScreenFunctions";
-
-// import{
-//   sync,
-//   forceUpload,
-//   forceDownload,
-// } from "./Functions/SyncFunctions";
-
-import { SyncUI } from "./UI/SyncUI";
-import { AuthUI } from './UI/AuthUI';
-
-import { LoadingUI } from "./UI/LoadingUI";
-
-import {appLog} from "./Functions/Logger"
-
-
-Amplify.configure(awsExports);
-
-// ✅ Use external storage for Android so folder shows in File Manager
-const LOCAL_ROOT_FOLDER_PATH =
-  Platform.OS === 'android'
-    ? `${RNFS.ExternalStorageDirectoryPath}/Snk`
-    : `${RNFS.DocumentDirectoryPath}/Snk`;
-
-
-const LOCAL_MANIFEST_FOLDER_PATH =
-  Platform.OS === 'android'
-    ? `${RNFS.ExternalStorageDirectoryPath}/SnkManifest`
-    : `${RNFS.DocumentDirectoryPath}/SnkManifest`;
-
-
-export default function App() {
-  const [path_dict, setPathDict] = useState({})
-  // 
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [isAmplifyReady, setIsAmplifyReady] = useState(false);
-  const [loadingAuth, setLoadingAuth] = useState(true);   // ✅ Track auth check
-  const [currentUser, setCurrentUser] = useState<string[]>("");
-
-appLog(LOCAL_MANIFEST_FOLDER_PATH)
-
-  useEffect(() => {
-    appLog('Amplify configured.');
-    setIsAmplifyReady(true);
-
-    // ✅ Check if user already signed in
-    const checkUser = async () => {
-      try {
-        const currentUser = await getCurrentUser();
-        appLog(['User session found:', currentUser]);
-        setCurrentUser(currentUser)
-        // 
-        setPathDict({
-          s3_root_folder_path :     `public/${currentUser.username}`,
-          s3_data_folder_path :     `public/${currentUser.username}/data`,
-          s3_manifest_file_path :   `public/${currentUser.username}/s3_manifest.json`,
-          s3_manifest_folder_path : `public/${currentUser.username}`,
-          // 
-          local_root_folder_path :      LOCAL_ROOT_FOLDER_PATH,
-          local_manifest_folder_path :  LOCAL_MANIFEST_FOLDER_PATH,
-          local_manifest_file_path :    `${LOCAL_MANIFEST_FOLDER_PATH}/manifest.json`,
-          local_s3_manifest_file_path : `${LOCAL_MANIFEST_FOLDER_PATH}/s3_manifest.json`,
-        })
-        // 
-        appLog(path_dict) // ✅ Runs only after first render
-        setLoggedIn(true);
-      } catch {
-        appLog('No user signed in');
-        setLoggedIn(false);
-      } finally {
-        setLoadingAuth(false);
-      }
-    };
-
-    checkUser();
-  }, []);
-
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const hasPermission = await requestStoragePermission();
-        if (!hasPermission) {
-          Alert.alert('Permission required', 'Storage access is needed.');
-          return;
-        }
-
-        const folderExists = await RNFS.exists(LOCAL_ROOT_FOLDER_PATH);
-        if (!folderExists) await RNFS.mkdir(LOCAL_ROOT_FOLDER_PATH);
-      } catch (err) {
-        console.error('Error creating folder:', err);
-      }
-    })();
-  }, []);
-
-
-// ------------------------------------------------------------------------------------------------
-
-// LoadingUI
-if (!isAmplifyReady || loadingAuth) {
-  return <LoadingUI />;
-}
-
-// SyncUI (after login)
-if (loggedIn) {
-  return (
-    <SyncUI
-      path_dict={path_dict}
-      onLogout={async () => {
-        try {
-          await signOut();
-          setLoggedIn(false);
-        } catch (err) {
-          console.error("Sign out error:", err);
-        }
-      }}
-    />
-  );
-}
-
-return (
-  <AuthUI
-    onSignIn={() => {
-      setLoggedIn(true);
-    }}
-  />
-);
-
-}

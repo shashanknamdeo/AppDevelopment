@@ -11,30 +11,29 @@ export function getTime() {
   return now.toLocaleTimeString()
 }
 
-export function appLog(log) {
-  if (app_log) {
-    console.log(`${getTime()}  -  ${log}`);
+
+export function logger(log){
+  if (Array.isArray(log)) {
+    console.log(`${getTime()} - :`, log);
+  } else if (typeof log === 'string') {
+    console.log(`${getTime()} - : ${log}`);
+  } else {
+    // Handle other types if necessary
+    console.log(`${getTime()} - :`, log);
   }
+}
+
+
+export function appLog(log) {
+  logger(log)
 }
 
 
 export function functionLog(log) {
-  if (app_log) {
-    if (Array.isArray(log)) {
-      console.log(`${getTime()} - :`, log);
-    } else if (typeof log === 'string') {
-      console.log(`${getTime()} - : ${log}`);
-    } else {
-      // Handle other types if necessary
-      console.log(`${getTime()} - :`, log);
-    }
-  }
+  logger(log)
 }
 
 
 export function uiLog(log) {
-  if (ui_log) {
-    console.log(`${getTime()}  -  ${log}`);
-  }
+  logger(log)
 }
-

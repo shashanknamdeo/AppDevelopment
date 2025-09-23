@@ -11,11 +11,18 @@ import {
   StyleSheet,
   Modal,
   TextInput,
+  Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import TopBar from "./Components/TopBarUI";
+
 import { useAutoSync } from "../Functions/AutoSyncFunctions";
+
 import { sync, forceUpload, forceDownload } from "../Functions/SyncFunctions";
+
+import { uiLog } from "../Functions/Logger";
+
+// ------------------------------------------------------------------------------------------------
 
 export const SyncUI = ({ path_dict, onLogout }: any) => {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
@@ -37,6 +44,8 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
         }
         const savedWifi = await AsyncStorage.getItem("snk_wifiOnly");
         if (savedWifi !== null) setWifiOnly(savedWifi === "true");
+        const savedLast = await AsyncStorage.getItem("snk_lastSyncTime");
+        if (savedLast) setLastSync(Number(savedLast));
       } catch (e) {
         console.error("Error loading settings:", e);
       }
@@ -54,24 +63,26 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
     })();
   }, [intervalMs]);
 
-  // Load last sync time
-  useEffect(() => {
-    (async () => {
-      try {
-        const v = await AsyncStorage.getItem("snk_lastSyncTime");
-        if (v) setLastSync(Number(v));
-      } catch (e) {
-        console.error("Error loading last sync:", e);
-      }
-    })();
-  }, [status]);
-
   // AutoSync Hook
   useAutoSync(path_dict, autoSyncEnabled, {
     intervalMs,
     wifiOnly,
-    onStatus: setStatus,
+    onStatus: async (s) => {
+      setStatus(s);
+      if (s === "idle") {
+        const now = Date.now();
+        await AsyncStorage.setItem("snk_lastSyncTime", String(now));
+        setLastSync(now);
+      }
+    },
   });
+
+  // Helper for manual sync update
+  const updateLastSync = async () => {
+    const now = Date.now();
+    await AsyncStorage.setItem("snk_lastSyncTime", String(now));
+    setLastSync(now);
+  };
 
   // Convert ms to d/h/m
   const msToDHMS = (ms: number) => {
@@ -222,7 +233,10 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
       <ScrollView contentContainerStyle={styles.scroll}>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
-          onPress={() => sync(path_dict)}
+          onPress={async () => {
+            await sync(path_dict);
+            await updateLastSync();
+          }}
         >
           <Image
             source={require("../Icons/CloudSyncIcon.png")}
@@ -233,7 +247,10 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
 
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
-          onPress={() => forceUpload(path_dict)}
+          onPress={async () => {
+            await forceUpload(path_dict);
+            await updateLastSync();
+          }}
         >
           <Image
             source={require("../Icons/CloudUploadIcon.png")}
@@ -244,7 +261,10 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
 
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
-          onPress={() => forceDownload(path_dict)}
+          onPress={async () => {
+            await forceDownload(path_dict);
+            await updateLastSync();
+          }}
         >
           <Image
             source={require("../Icons/CloudDownloadIcon.png")}
@@ -349,6 +369,7 @@ const styles = StyleSheet.create({
   },
   modalButton: { padding: 10 },
 });
+
 
 
 
@@ -685,6 +706,7 @@ const styles = StyleSheet.create({
 // ------------------------------------------------------------------------------------------------
 
 export function confirmForceUpload(): Promise<boolean> {
+  uiLog("Initialize Function : confirmForceUpload")
   return new Promise((resolve) => {
     Alert.alert(
       "⚠️ Force Upload",
@@ -696,10 +718,12 @@ export function confirmForceUpload(): Promise<boolean> {
       { cancelable: false }
     );
   });
+  uiLog("Terminate Function : confirmForceUpload")
 }
 
 
 export function confirmForceDownload(): Promise<boolean> {
+  uiLog("Initialize Function : confirmForceDownload")
   return new Promise((resolve) => {
     Alert.alert(
       "⚠️ Force Download",
@@ -711,4 +735,5 @@ export function confirmForceDownload(): Promise<boolean> {
       { cancelable: false }
     );
   });
+  uiLog("Terminate Function : confirmForceDownload")
 }
