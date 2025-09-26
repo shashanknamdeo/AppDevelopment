@@ -1,4 +1,4 @@
-// this is my SyncUI do only required changes and give me full code
+// SyncUI.tsx
 import React, { useState, useEffect } from "react";
 import {
   SafeAreaView,
@@ -17,9 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import TopBar from "./Components/TopBarUI";
 
 import { useAutoSync } from "../Functions/AutoSyncFunctions";
-
 import { sync, forceUpload, forceDownload } from "../Functions/SyncFunctions";
-
 import { uiLog } from "../Functions/Logger";
 
 // ------------------------------------------------------------------------------------------------
@@ -28,12 +26,11 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
   const [wifiOnly, setWifiOnly] = useState(false);
   const [status, setStatus] = useState<"idle" | "syncing" | "error">("idle");
-  const [intervalMs, setIntervalMs] = useState<number>(24 * 60 * 60 * 1000); // default 24h
+  const [intervalMs, setIntervalMs] = useState<number>(24 * 60 * 60 * 1000);
   const [draftInterval, setDraftInterval] = useState<number>(24 * 60 * 60 * 1000);
   const [intervalPopupVisible, setIntervalPopupVisible] = useState(false);
   const [lastSync, setLastSync] = useState<number | null>(null);
 
-  // Load saved settings
   useEffect(() => {
     (async () => {
       try {
@@ -52,7 +49,6 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
     })();
   }, []);
 
-  // Save interval when changed
   useEffect(() => {
     (async () => {
       try {
@@ -63,7 +59,6 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
     })();
   }, [intervalMs]);
 
-  // AutoSync Hook
   useAutoSync(path_dict, autoSyncEnabled, {
     intervalMs,
     wifiOnly,
@@ -77,14 +72,12 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
     },
   });
 
-  // Helper for manual sync update
   const updateLastSync = async () => {
     const now = Date.now();
     await AsyncStorage.setItem("snk_lastSyncTime", String(now));
     setLastSync(now);
   };
 
-  // Convert ms to d/h/m
   const msToDHMS = (ms: number) => {
     const days = Math.floor(ms / (24 * 60 * 60 * 1000));
     const hours = Math.floor((ms % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
@@ -102,7 +95,6 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
     <SafeAreaView style={styles.container}>
       <TopBar onLogout={onLogout} />
 
-      {/* Last Sync Card */}
       <View style={styles.cardRow}>
         <Text style={styles.cardLabel}>Last Sync</Text>
         <Text style={styles.cardValue}>{lastSync ? formatDate(lastSync) : "Never"}</Text>
@@ -238,11 +230,13 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
             await updateLastSync();
           }}
         >
-          <Image
-            source={require("../Icons/CloudSyncIcon.png")}
-            style={{ width: 24, height: 24, marginRight: 8 }}
-          />
-          <Text style={styles.buttonText}>Sync</Text>
+          <View style={styles.actionContent}>
+            <Image
+              source={require("../Icons/CloudSyncIcon.png")}
+              style={{ width: 24, height: 24, marginRight: 8 }}
+            />
+            <Text style={styles.buttonText}>Sync</Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -252,11 +246,13 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
             await updateLastSync();
           }}
         >
-          <Image
-            source={require("../Icons/CloudUploadIcon.png")}
-            style={{ width: 24, height: 24, marginRight: 8 }}
-          />
-          <Text style={styles.buttonText}>Force Upload</Text>
+          <View style={styles.actionContent}>
+            <Image
+              source={require("../Icons/CloudUploadIcon.png")}
+              style={{ width: 24, height: 24, marginRight: 8 }}
+            />
+            <Text style={styles.buttonText}>Force Upload</Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -266,27 +262,34 @@ export const SyncUI = ({ path_dict, onLogout }: any) => {
             await updateLastSync();
           }}
         >
-          <Image
-            source={require("../Icons/CloudDownloadIcon.png")}
-            style={{ width: 24, height: 24, marginRight: 8 }}
-          />
-          <Text style={styles.buttonText}>Force Download</Text>
+          <View style={styles.actionContent}>
+            <Image
+              source={require("../Icons/CloudDownloadIcon.png")}
+              style={{ width: 24, height: 24, marginRight: 8 }}
+            />
+            <Text style={styles.buttonText}>Force Download</Text>
+          </View>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-// Styles remain unchanged
+// Styles
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { padding: 16 },
   actionButton: {
-    flexDirection: "row",
     alignItems: "center",
-    padding: 12,
+    justifyContent: "center",
+    padding: 16,
     borderRadius: 8,
     marginBottom: 12,
+  },
+  actionContent: {
+    flexDirection: "row", // Changed to 'row'
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   card: {
@@ -372,8 +375,7 @@ const styles = StyleSheet.create({
 
 
 
-
-
+// // this is my SyncUI do only required changes and give me full code
 // import React, { useState, useEffect } from "react";
 // import {
 //   SafeAreaView,
@@ -386,31 +388,43 @@ const styles = StyleSheet.create({
 //   StyleSheet,
 //   Modal,
 //   TextInput,
+//   Alert,
 // } from "react-native";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 // import TopBar from "./Components/TopBarUI";
+
 // import { useAutoSync } from "../Functions/AutoSyncFunctions";
+
 // import { sync, forceUpload, forceDownload } from "../Functions/SyncFunctions";
+
+// import { uiLog } from "../Functions/Logger";
+
+// // ------------------------------------------------------------------------------------------------
 
 // export const SyncUI = ({ path_dict, onLogout }: any) => {
 //   const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+//   const [wifiOnly, setWifiOnly] = useState(false);
 //   const [status, setStatus] = useState<"idle" | "syncing" | "error">("idle");
 //   const [intervalMs, setIntervalMs] = useState<number>(24 * 60 * 60 * 1000); // default 24h
 //   const [draftInterval, setDraftInterval] = useState<number>(24 * 60 * 60 * 1000);
 //   const [intervalPopupVisible, setIntervalPopupVisible] = useState(false);
 //   const [lastSync, setLastSync] = useState<number | null>(null);
 
-//   // Load saved interval when app opens
+//   // Load saved settings
 //   useEffect(() => {
 //     (async () => {
 //       try {
-//         const saved = await AsyncStorage.getItem("snk_intervalMs");
-//         if (saved) {
-//           setIntervalMs(Number(saved));
-//           setDraftInterval(Number(saved));
+//         const savedInterval = await AsyncStorage.getItem("snk_intervalMs");
+//         if (savedInterval !== null) {
+//           setIntervalMs(Number(savedInterval));
+//           setDraftInterval(Number(savedInterval));
 //         }
+//         const savedWifi = await AsyncStorage.getItem("snk_wifiOnly");
+//         if (savedWifi !== null) setWifiOnly(savedWifi === "true");
+//         const savedLast = await AsyncStorage.getItem("snk_lastSyncTime");
+//         if (savedLast) setLastSync(Number(savedLast));
 //       } catch (e) {
-//         console.error("Error loading interval:", e);
+//         console.error("Error loading settings:", e);
 //       }
 //     })();
 //   }, []);
@@ -426,24 +440,26 @@ const styles = StyleSheet.create({
 //     })();
 //   }, [intervalMs]);
 
-//   // Load last sync time
-//   useEffect(() => {
-//     (async () => {
-//       try {
-//         const v = await AsyncStorage.getItem("snk_lastSyncTime");
-//         if (v) setLastSync(Number(v));
-//       } catch (e) {
-//         console.error("Error loading last sync:", e);
-//       }
-//     })();
-//   }, [status]);
-
 //   // AutoSync Hook
 //   useAutoSync(path_dict, autoSyncEnabled, {
 //     intervalMs,
-//     wifiOnly: false,
-//     onStatus: setStatus,
+//     wifiOnly,
+//     onStatus: async (s) => {
+//       setStatus(s);
+//       if (s === "idle") {
+//         const now = Date.now();
+//         await AsyncStorage.setItem("snk_lastSyncTime", String(now));
+//         setLastSync(now);
+//       }
+//     },
 //   });
+
+//   // Helper for manual sync update
+//   const updateLastSync = async () => {
+//     const now = Date.now();
+//     await AsyncStorage.setItem("snk_lastSyncTime", String(now));
+//     setLastSync(now);
+//   };
 
 //   // Convert ms to d/h/m
 //   const msToDHMS = (ms: number) => {
@@ -473,12 +489,36 @@ const styles = StyleSheet.create({
 //       <View style={styles.card}>
 //         <View style={styles.autoSyncRow}>
 //           <Text style={styles.cardLabel}>Auto Sync</Text>
-//           <Switch value={autoSyncEnabled} onValueChange={setAutoSyncEnabled} />
+//           <Switch
+//             value={autoSyncEnabled}
+//             onValueChange={async (val) => {
+//               setAutoSyncEnabled(val);
+//               try {
+//                 await AsyncStorage.setItem("snk_autoSyncEnabled", String(val));
+//               } catch (e) {
+//                 console.error("Error saving autoSyncEnabled:", e);
+//               }
+//             }}
+//           />
 //         </View>
 
-//         {/* Show details only if Auto Sync is enabled */}
 //         {autoSyncEnabled && (
 //           <>
+//             <View style={styles.autoSyncRow}>
+//               <Text style={styles.cardLabel}>Wi-Fi Only</Text>
+//               <Switch
+//                 value={wifiOnly}
+//                 onValueChange={async (val) => {
+//                   setWifiOnly(val);
+//                   try {
+//                     await AsyncStorage.setItem("snk_wifiOnly", String(val));
+//                   } catch (e) {
+//                     console.error("Error saving wifiOnly:", e);
+//                   }
+//                 }}
+//               />
+//             </View>
+
 //             <View style={styles.autoSyncRow}>
 //               <Text style={styles.cardLabel}>Status</Text>
 //               <View
@@ -501,7 +541,6 @@ const styles = StyleSheet.create({
 //               </View>
 //             )}
 
-//             {/* Interval Selector */}
 //             <TouchableOpacity
 //               style={styles.intervalRow}
 //               onPress={() => {
@@ -571,7 +610,10 @@ const styles = StyleSheet.create({
 //       <ScrollView contentContainerStyle={styles.scroll}>
 //         <TouchableOpacity
 //           style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
-//           onPress={() => sync(path_dict)}
+//           onPress={async () => {
+//             await sync(path_dict);
+//             await updateLastSync();
+//           }}
 //         >
 //           <Image
 //             source={require("../Icons/CloudSyncIcon.png")}
@@ -582,7 +624,10 @@ const styles = StyleSheet.create({
 
 //         <TouchableOpacity
 //           style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
-//           onPress={() => forceUpload(path_dict)}
+//           onPress={async () => {
+//             await forceUpload(path_dict);
+//             await updateLastSync();
+//           }}
 //         >
 //           <Image
 //             source={require("../Icons/CloudUploadIcon.png")}
@@ -593,7 +638,10 @@ const styles = StyleSheet.create({
 
 //         <TouchableOpacity
 //           style={[styles.actionButton, { backgroundColor: "#4babdd" }]}
-//           onPress={() => forceDownload(path_dict)}
+//           onPress={async () => {
+//             await forceDownload(path_dict);
+//             await updateLastSync();
+//           }}
 //         >
 //           <Image
 //             source={require("../Icons/CloudDownloadIcon.png")}
@@ -606,6 +654,7 @@ const styles = StyleSheet.create({
 //   );
 // };
 
+// // Styles remain unchanged
 // const styles = StyleSheet.create({
 //   container: { flex: 1 },
 //   scroll: { padding: 16 },
@@ -697,10 +746,6 @@ const styles = StyleSheet.create({
 //   },
 //   modalButton: { padding: 10 },
 // });
-
-
-
-// this is my syncUI do only required changes and give me full code
 
 
 // ------------------------------------------------------------------------------------------------

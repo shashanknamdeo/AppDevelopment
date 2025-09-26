@@ -7,6 +7,7 @@ import 'react-native-url-polyfill/auto';
 import React, { useState, useEffect } from 'react';
 
 import {
+  Platform,
   Image,
   SafeAreaView,
   View,

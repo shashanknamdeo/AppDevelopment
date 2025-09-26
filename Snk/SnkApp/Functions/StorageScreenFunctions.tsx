@@ -137,7 +137,7 @@ export async function uploadListLocalStorageFilesToS3(list_local_files, local_ro
   functionLog("Initialize Function : uploadListLocalStorageFilesToS3")
   try {
     if (list_local_files.length === 0) {
-      Alert.alert('No files', 'No files found in Upload List');
+      // Alert.alert('No files', 'No files found in Upload List');
       return;
     }
 
@@ -241,7 +241,7 @@ export async function downloadListFilesFromS3ToLocalStorage(s3_files_list, sourc
   functionLog("Initialize Function : downloadListFilesFromS3ToLocalStorage")
   try {
     if (s3_files_list.length === 0) {
-      Alert.alert('No files', 'No files found in S3 to download.');
+      // Alert.alert('No files', 'No files found in S3 to download.');
       functionLog('No files found in S3 to download.')
       return;
     }
