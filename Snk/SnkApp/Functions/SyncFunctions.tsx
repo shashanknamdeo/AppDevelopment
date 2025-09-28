@@ -17,6 +17,7 @@ import CryptoJS from 'crypto-js';
 import {functionLog} from './Logger'
 
 import {
+  listS3Files,
   removeListLocalFiles,
   removeListRemoteFiles,
   uploadLocalStorageFilesToS3,
@@ -133,6 +134,51 @@ export async function listLocalFilesRecursively(path: string): Promise<string[]>
 // ------------------------------------------------------------------------------------------------
 
 
+export async function getS3ManifestFile(path_dict) {
+  functionLog("Initialize Function : getS3ManifestFile");
+  try {
+    // Check if S3 Manifest Exists
+    functionLog("Check S3 Manifest ----------------------------------------------------------------------------------");
+    let s3ManifestExists = false;
+    try {
+      const files = await listS3Files(path_dict.s3_manifest_folder_path);
+      functionLog(["S3_manifest_folder files :", files]);
+
+      if (files.includes("s3_manifest.json")) {
+        s3ManifestExists = true;
+      }
+    } catch (err) {
+      functionLog("list() failed while checking S3 manifest");
+    }
+
+    if (s3ManifestExists) {
+      // Download existing S3 manifest
+      functionLog("s3_manifest.json found - Download S3 Manifest ------------------------------------------------------");
+      await downloadFileFromS3ToLocalStorage( "s3_manifest.json", path_dict.s3_manifest_folder_path, path_dict.local_manifest_folder_path);
+    } else {
+      // Create empty manifest structure
+      functionLog("s3_manifest.json not found - Create Fresh Empty S3 Manifest ----------------------------------------");
+      const emptyManifest = {
+        generatedAt: new Date().toISOString(),
+        files: {},
+      };
+      await RNFS.writeFile(
+        path_dict.local_s3_manifest_file_path,
+        JSON.stringify(emptyManifest, null, 2),
+        "utf8"
+      );
+    }
+
+    functionLog("Terminate Function : getS3ManifestFile");
+  } catch (err) {
+    functionLog(`Error getS3ManifestFile : ${err}`);
+  }
+}
+
+
+// ------------------------------------------------------------------------------------------------
+
+
 interface ManifestFile {
   path: string;
   etag: string;
@@ -213,6 +259,7 @@ export async function compareManifests( folderPath: string, localManifestFileNam
 
 // ------------------------------------------------------------------------------------------------
 
+
 export async function compareModifiedFiles(list_modified_files, path_dict) {
   functionLog("Initialize Function : compareModifiedFiles")
   try{
@@ -249,7 +296,9 @@ export async function compareModifiedFiles(list_modified_files, path_dict) {
   functionLog("Terminate Function : compareModifiedFiles")
 }
 
+
 // ------------------------------------------------------------------------------------------------
+
 
 export async function generateManifestComparison(path_dict) {
   functionLog("Initialize Function : generateManifestComparison")
@@ -259,8 +308,9 @@ export async function generateManifestComparison(path_dict) {
     await createLocalManifest(path_dict)
     // 
     // Download S3 Manifest
-    functionLog('Download S3 Manifest ------------------------------------------------------------------------------')
-    await downloadFileFromS3ToLocalStorage('s3_manifest.json', path_dict.s3_manifest_folder_path, path_dict.local_manifest_folder_path)
+    functionLog('Get S3 Manifest ------------------------------------------------------------------------------')
+    functionLog(`s3_manifest_folder_path : ${path_dict.s3_manifest_folder_path}`)
+    await getS3ManifestFile(path_dict)
     // 
     // Compare Manifest Response
     functionLog('Compare Manifest Response -------------------------------------------------------------------------')
@@ -305,6 +355,8 @@ export async function sync(path_dict){
     functionLog('Upload New Manifest To S3 -------------------------------------------------------------------------')
     await createLocalManifest(path_dict)
     uploadLocalStorageFilesToS3(null, path_dict.local_manifest_file_path, path_dict.s3_manifest_file_path)
+    // 
+    Alert.alert('Sync', 'Sync successful.');
   } catch (err) {
     console.error('sync error:', err);
     Alert.alert('Error', 'Failed to sync.');
@@ -335,6 +387,8 @@ export async function forceDownload (path_dict) {
       // Remove Only-In-Local Files
       functionLog('Remove Only-In-Local Files ------------------------------------------------------------------------')
       await removeListLocalFiles(path_dict.local_root_folder_path, compare_manifest_response.onlyInLocal)
+      // 
+      Alert.alert('Force Download', 'Force Download successful.');
     } 
     else if (response === false){
       functionLog('forceDownload - Cancel')
@@ -373,6 +427,8 @@ export async function forceUpload (path_dict) {
       // 
       // upload local manifest to s3
       await uploadLocalStorageFilesToS3(null, path_dict.local_manifest_file_path, path_dict.s3_manifest_file_path)
+      // 
+      Alert.alert('Force Upload', 'Force Upload successful.');
     } 
     else if (response === false){
       functionLog('forceUpload - Cancel')

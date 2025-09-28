@@ -8,11 +8,6 @@ at installing app
 at sign up
     create user folder at cloud
 
-18:41:43 - : Scheduling first autosync in 3581523 ms
+change local snk manifest path
 
-where intervalMs sets
-
-19:06:56 - : Scheduling first autosync in 232000 ms
-19:06:56 - : Initialize Function : autoSync
-19:06:56 - : Terminate Function : autoSync
-19:06:56 - : Scheduling first autosync in 3531950 ms
+npx react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res/

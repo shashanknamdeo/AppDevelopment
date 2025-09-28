@@ -430,20 +430,21 @@ export async function pickAndCopyFileToLocalStorage(setLocalFiles){
 // ------------------------------------------------------------------------------------------------
 
 
-export async function listS3Files(setS3Files, s3_data_folder_path) {
-  functionLog("Initialize Function : listS3Files")
+export async function listS3Files(s3_folder_path) {
+  functionLog("Initialize Function : listS3Files");
   try {
-    const result = await list({ path: `${s3_data_folder_path}/`});
+    const result = await list({ path: `${s3_folder_path}/` });
     const files = result.items
-      .filter(item => item.path !== `${s3_data_folder_path}/`)
-      .map(item => item.path.replace(`${s3_data_folder_path}/`, ''));
-    setS3Files(files); // Error listing files: TypeError: setS3Files is not a function (it is Object) 
-    functionLog(['S3 Files:', files]);
-    functionLog("Terminate Function : listS3Files")
+      .filter(item => item.path !== `${s3_folder_path}/`)
+      .map(item => item.path.replace(`${s3_folder_path}/`, ""));
+    functionLog(["S3 Files:", files]);
+    functionLog("Terminate Function : listS3Files");
+    return files;
   } catch (err) {
-    console.error('Error listing files:', err);
+    console.error("Error listing files:", err);
+    return [];
   }
-};
+}
 
 
 // REMOVE (DELETE) FUNCTIONS ----------------------------------------------------------------------
