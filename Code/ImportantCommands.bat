@@ -1,3 +1,15 @@
+
+rem start a new mobile app project
+
+D:\Material\AppDevelopment\Gossipy>npx @react-native-community/cli@latest init Gossipy
+
+rem connect mobile and enable usb debuging , install via usb , USB Debugging (Security Settings)
+
+D:\Material\AppDevelopment\Gossipy>cd Gossipy
+D:\Material\AppDevelopment\Gossipy>npx react-native run-android
+
+rem -----------------------------------------------------------------------------------------------
+
 rem start server
 npx react-native start
 
