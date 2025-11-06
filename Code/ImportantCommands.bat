@@ -46,3 +46,6 @@ rem     3. Install on your phone
 rem         From App-root-folder
 
 adb install android/app/build/outputs/apk/release/app-release.apk
+
+rem To check TypeScript syntax  without building
+D:\Material\AppDevelopment\Gossipy\Gossipy>npx tsc --noEmit
