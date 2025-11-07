@@ -7,7 +7,7 @@ export const LoadingUI = () => (
   <SafeAreaView style={styles.center}>
     {/* App Logo */}
     <Image
-      source={require("../Icons/Gossipy.jpg")}  // 👈 place your logo in /assets folder
+      source={require("../Icons/GossipyCloseUp.jpg")}  // 👈 place your logo in /assets folder
       style={styles.logo}
       resizeMode="contain"
     />

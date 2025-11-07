@@ -1,0 +1,25 @@
+1.  choose the image that you want to make icon
+
+2.  go https://makeappicon.com/ and select image
+    (this will generate a zip folder, download it)
+
+3. go to app\android\app\src\main\res
+
+4. replace same name folder under app/android\app\src\main\res with folder in download zip folder
+
+5. npx react-native run-android
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
