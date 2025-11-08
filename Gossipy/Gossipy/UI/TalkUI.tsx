@@ -1,5 +1,4 @@
-
-console.log("Initialize TalkUI ----------------------------------------------------------------------------------")
+console.log("Access File TalkUI ---------------------------------------------------------------------------------")
 
 // // UI/TalkUI.tsx
 // import React, { useState } from "react";
@@ -54,18 +53,11 @@ console.log("Initialize TalkUI -------------------------------------------------
 //   backText: { color: "#007AFF", fontSize: 16 },
 // });
 
-// ---------------------------------------------------------
-
-import Voice from "@react-native-voice/voice";
-console.log("Voice module:", Voice);
-
-// ---------------------------------------------------------
+// this is my TalkUI.tsx do only required changes if needed and give me full code
 
 import React, { useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
-import { recordSpeech } from "../Functions/VoiceToText";
-import { generateText } from "../Functions/GoogleTextGen";
-import { generateSpeech } from "../Functions/AwsTextToSpeech";
+import { handleVoiceConversation } from "../Functions/TalkFunctions";
 
 export function TalkUI({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -73,31 +65,14 @@ export function TalkUI({ onBack }: { onBack: () => void }) {
   const [botReply, setBotReply] = useState("");
 
   const handleConversation = async () => {
-    try {
-      setLoading(true);
-      setUserSpeech("");
-      setBotReply("");
+    setUserSpeech("");
+    setBotReply("");
 
-      // 🎤 Step 1: Record user's voice → text
-      const speechText = await recordSpeech();
-      if (!speechText) {
-        setBotReply("I didn’t catch that. Please try again.");
-        return;
-      }
-      setUserSpeech(speechText);
-
-      // 🤖 Step 2: Generate AI reply from Gemini
-      const reply = await generateText(speechText);
-      setBotReply(reply);
-
-      // 🔊 Step 3: Speak reply using AWS Polly
-      await generateSpeech(reply, "Salli");
-    } catch (err) {
-      console.error("TalkUI conversation error:", err);
-      setBotReply("⚠️ Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
+    await handleVoiceConversation(
+      setLoading,
+      (transcript: string) => setUserSpeech(transcript),
+      (aiResponse: string) => setBotReply(aiResponse)
+    );
   };
 
   return (

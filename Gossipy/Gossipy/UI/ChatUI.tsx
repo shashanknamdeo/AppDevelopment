@@ -174,7 +174,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { generateText } from "../Functions/GoogleTextGen";
+import { generateGeminiResponse } from "../Functions/TextToTextGenerationFunctions";
 
 export function ChatUI({ user, onSignOut }: { user: any; onSignOut: () => void }) {
   const [messages, setMessages] = useState([
@@ -190,7 +190,7 @@ export function ChatUI({ user, onSignOut }: { user: any; onSignOut: () => void }
     setInput("");
     setLoading(true);
 
-    const botReply = await generateText(input);
+    const botReply = await generateGeminiResponse(input);
     setMessages((prev) => [
       ...prev,
       { id: Date.now().toString(), text: botReply, sender: "bot" },

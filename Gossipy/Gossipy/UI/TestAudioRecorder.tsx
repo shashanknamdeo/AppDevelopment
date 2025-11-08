@@ -1,3 +1,5 @@
+console.log('Access File  TestAudioRecorder.tsx -----------------------------------------------------------------')
+
 // this file is use to check AudioRecorder.tsx file
 
 import React, { useState } from "react";
@@ -5,6 +7,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { AudioRecorder } from "../Functions/AudioRecorder";
 
 export function TestAudioRecorder() {
+  console.log('Initialize Function : TestAudioRecorder')
   const [recordedUri, setRecordedUri] = useState<string>("");
 
   const handleRecordingComplete = (uri: string) => {
@@ -23,6 +26,7 @@ export function TestAudioRecorder() {
       ) : null}
     </View>
   );
+  console.log('Terminate Function : TestAudioRecorder')
 }
 
 const styles = StyleSheet.create({

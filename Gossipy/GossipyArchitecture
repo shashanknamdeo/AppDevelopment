@@ -14,3 +14,17 @@ Parallel processing: send text to Gemini while Google TTS is preparing speech â†
 
 Cache frequent responses: if the user repeats common phrases, reuse audio to reduce TTS calls.
 
+
+Goosipy
+    AuthUI
+        AuthFunctions
+    ChatUI
+        TextToTextGenerationFunctions
+    TalkUI
+        TalkFunctions
+            AudioRecorderFunctions
+            SpeachToTextGenerationFunctions
+            TextToTextGenerationFunctions
+            TextToSpeachGenerationFunctions
+
+chatFunction me add karna hai TextToTextGenerationFunctions
