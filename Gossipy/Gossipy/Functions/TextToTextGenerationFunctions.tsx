@@ -19,3 +19,5 @@ export async function generateText(prompt: string): Promise<string> {
     return "⚠️ Error: Failed to fetch AI response.";
   }
 }
+
+
