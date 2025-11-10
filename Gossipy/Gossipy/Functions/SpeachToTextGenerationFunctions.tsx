@@ -394,47 +394,161 @@ console.log('Access File SpeachToTextGenerationFunctions.tsx -------------------
 // }
 
 
-// Functions/SpeachToTextGenerationFunctions.tsx
+// // Functions/SpeachToTextGenerationFunctions.tsx
+// import RNFS from "react-native-fs";
+// import { GOOGLE_SPEECH_API_KEY } from "@env";
+
+// /**
+//  * Temporary function to test transcription of a local WAV file
+//  * Works for short files (<60s), LINEAR16 PCM, 44.1 kHz, mono
+//  */
+// export async function convertSpeechFileToText(): Promise<string> {
+//   try {
+//     // Adjust path according to platform / where you placed the file
+//     // Example: Project root -> Assets/Recording.wav
+//     const fileUri = `${RNFS.MainBundlePath}/Assets/Recording.wav`;
+
+//     // Convert file:// path for RNFS
+//     const path = fileUri.startsWith("file://") ? fileUri.replace("file://", "") : fileUri;
+
+//     const exists = await RNFS.exists(path);
+//     if (!exists) throw new Error(`File not found at path: ${path}`);
+
+//     // Read file as base64
+//     const base64 = await RNFS.readFile(path, "base64");
+
+//     const apiKey = GOOGLE_SPEECH_API_KEY;
+//     if (!apiKey) throw new Error("Please set GOOGLE_SPEECH_API_KEY in your .env");
+
+//     const requestBody = {
+//       config: {
+//         encoding: "LINEAR16",       // PCM WAV
+//         sampleRateHertz: 44100,     // matches your WAV
+//         languageCode: "en-US",
+//         enableAutomaticPunctuation: true,
+//         model: "default",
+//         profanityFilter: false,
+//       },
+//       audio: {
+//         content: base64,
+//       },
+//     };
+
+//     const url = `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`;
+//     const res = await fetch(url, {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify(requestBody),
+//     });
+
+//     if (!res.ok) {
+//       const errText = await res.text();
+//       throw new Error(`Google Speech API error: ${res.status} ${res.statusText} - ${errText}`);
+//     }
+
+//     const json = await res.json();
+//     const results = json.results || [];
+//     if (!results.length) return "[No transcript returned]";
+
+//     return results
+//       .map((r: any) => r.alternatives?.[0]?.transcript || "")
+//       .filter(Boolean)
+//       .join(" ")
+//       .trim();
+//   } catch (err: any) {
+//     console.error("Error transcribing local audio:", err);
+//     throw new Error(err?.message || String(err));
+//   }
+// }
+
 import RNFS from "react-native-fs";
+import { PermissionsAndroid, Platform } from "react-native";
 import { GOOGLE_SPEECH_API_KEY } from "@env";
 
 /**
- * Temporary function to test transcription of a local WAV file
- * Works for short files (<60s), LINEAR16 PCM, 44.1 kHz, mono
+ * ✅ Request storage/media permissions (Android 10–14 safe)
+ */
+async function requestStoragePermission(): Promise<boolean> {
+  if (Platform.OS !== "android") return true;
+
+  try {
+    if (Platform.Version >= 33) {
+      // 🔹 Android 13+ (API 33+)
+      const granted = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+        PermissionsAndroid.PERMISSIONS.READ_MEDIA_AUDIO,
+      ]);
+
+      const hasPermission =
+        granted["android.permission.READ_MEDIA_AUDIO"] === PermissionsAndroid.RESULTS.GRANTED ||
+        granted["android.permission.READ_MEDIA_IMAGES"] === PermissionsAndroid.RESULTS.GRANTED ||
+        granted["android.permission.READ_MEDIA_VIDEO"] === PermissionsAndroid.RESULTS.GRANTED;
+
+      console.log("📱 Android 13+ storage permission:", hasPermission ? "granted" : "denied");
+      return hasPermission;
+    } else {
+      // 🔹 Android 12 or below
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+        {
+          title: "Storage Permission",
+          message: "Gossipy needs access to storage to read your test audio file.",
+          buttonNeutral: "Ask Me Later",
+          buttonNegative: "Cancel",
+          buttonPositive: "OK",
+        }
+      );
+
+      const hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+      console.log("📱 Legacy storage permission:", hasPermission ? "granted" : "denied");
+      return hasPermission;
+    }
+  } catch (err) {
+    console.warn("⚠️ Permission request error:", err);
+    return false;
+  }
+}
+
+/**
+ * 🎧 Convert local WAV file → Base64 → Google Speech API → text
+ * Make sure your audio file is: 16-bit PCM, mono, 44.1kHz
  */
 export async function convertSpeechFileToText(): Promise<string> {
   try {
-    // Adjust path according to platform / where you placed the file
-    // Example: Project root -> Assets/Recording.wav
-    const fileUri = `${RNFS.MainBundlePath}/Assets/Recording.wav`;
+    // ✅ Ask permission before reading file
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) throw new Error("Storage permission denied by user or system.");
 
-    // Convert file:// path for RNFS
+    // ✅ Path to your test WAV file
+    const fileUri = "file:///storage/emulated/0/Snk/Recording.wav";
     const path = fileUri.startsWith("file://") ? fileUri.replace("file://", "") : fileUri;
+
+    console.log("🎧 Checking path:", path);
 
     const exists = await RNFS.exists(path);
     if (!exists) throw new Error(`File not found at path: ${path}`);
 
-    // Read file as base64
+    console.log("📂 Reading audio file...");
     const base64 = await RNFS.readFile(path, "base64");
 
     const apiKey = GOOGLE_SPEECH_API_KEY;
-    if (!apiKey) throw new Error("Please set GOOGLE_SPEECH_API_KEY in your .env");
+    if (!apiKey) throw new Error("Please set GOOGLE_SPEECH_API_KEY in your .env file");
 
     const requestBody = {
       config: {
-        encoding: "LINEAR16",       // PCM WAV
-        sampleRateHertz: 44100,     // matches your WAV
+        encoding: "LINEAR16", // PCM WAV
+        sampleRateHertz: 44100, // your WAV file setting
         languageCode: "en-US",
         enableAutomaticPunctuation: true,
         model: "default",
-        profanityFilter: false,
       },
-      audio: {
-        content: base64,
-      },
+      audio: { content: base64 },
     };
 
     const url = `https://speech.googleapis.com/v1/speech:recognize?key=${apiKey}`;
+    console.log("🌐 Sending request to Google Speech API...");
+
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -447,16 +561,21 @@ export async function convertSpeechFileToText(): Promise<string> {
     }
 
     const json = await res.json();
+    console.log("✅ Google API Response:", JSON.stringify(json, null, 2));
+
     const results = json.results || [];
     if (!results.length) return "[No transcript returned]";
 
-    return results
+    const transcript = results
       .map((r: any) => r.alternatives?.[0]?.transcript || "")
       .filter(Boolean)
       .join(" ")
       .trim();
+
+    console.log("🗣️ Transcript:", transcript);
+    return transcript;
   } catch (err: any) {
-    console.error("Error transcribing local audio:", err);
+    console.error("❌ Error transcribing local audio:", err);
     throw new Error(err?.message || String(err));
   }
 }
