@@ -1,86 +1,70 @@
 console.log("Access File TalkUI ---------------------------------------------------------------------------------")
 
-// // UI/TalkUI.tsx
-// import React, { useState } from "react";
-// import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-// import { generateSpeech } from "../Functions/AwsTextToSpeech";
-
-// export function TalkUI({ onBack }: { onBack: () => void }) {
-//   const [loading, setLoading] = useState(false);
-//   const [lastResponse, setLastResponse] = useState("");
-
-//   const handleSpeak = async () => {
-//     try {
-//       setLoading(true);
-//       const reply = "Hello Shashank! This is Gossipy speaking using Amazon Polly.";
-//       await generateSpeech(reply, "Salli");
-//       setLastResponse(reply);
-//     } catch (err) {
-//       console.error("Polly error:", err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <Text style={styles.title}>🎙️ Gossipy Talk Mode</Text>
-
-//       <TouchableOpacity
-//         style={[styles.button, loading && { opacity: 0.5 }]}
-//         onPress={handleSpeak}
-//         disabled={loading}
-//       >
-//         <Text style={styles.buttonText}>{loading ? "Speaking..." : "Start Talking"}</Text>
-//       </TouchableOpacity>
-
-//       {lastResponse ? <Text style={styles.response}>🤖 {lastResponse}</Text> : null}
-
-//       <TouchableOpacity onPress={onBack} style={styles.backButton}>
-//         <Text style={styles.backText}>⬅️ Back to Chat</Text>
-//       </TouchableOpacity>
-//     </View>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-//   title: { fontSize: 22, fontWeight: "bold", color: "#007AFF", marginBottom: 20 },
-//   button: { backgroundColor: "#007AFF", paddingVertical: 14, paddingHorizontal: 40, borderRadius: 30 },
-//   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-//   response: { fontSize: 16, color: "#333", marginTop: 20, textAlign: "center", paddingHorizontal: 20 },
-//   backButton: { marginTop: 40 },
-//   backText: { color: "#007AFF", fontSize: 16 },
-// });
-
-// this is my TalkUI.tsx do only required changes if needed and give me full code
+// this is my TalkUI.tsx do only required changes and give me full code
 
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+} from "react-native";
 import { handleVoiceConversation } from "../Functions/TalkFunctions";
 
 export function TalkUI({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(false);
-  const [userSpeech, setUserSpeech] = useState("");
-  const [botReply, setBotReply] = useState("");
+  const [messages, setMessages] = useState<
+    { id: string; text: string; sender: "user" | "bot" }[]
+  >([]);
 
   const handleConversation = async () => {
-    setUserSpeech("");
-    setBotReply("");
+    setMessages([]);
 
     await handleVoiceConversation(
       setLoading,
-      (transcript: string) => setUserSpeech(transcript),
-      (aiResponse: string) => setBotReply(aiResponse)
+      (transcript: string) =>
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now().toString(), text: transcript, sender: "user" },
+        ]),
+      (aiResponse: string) =>
+        setMessages((prev) => [
+          ...prev,
+          { id: Date.now().toString(), text: aiResponse, sender: "bot" },
+        ])
     );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🎙️ Gossipy Talk Mode</Text>
+      {/* Chat bubbles */}
+      <FlatList
+        data={messages}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.bubble,
+              item.sender === "user" ? styles.userBubble : styles.botBubble,
+            ]}
+          >
+            <Text
+              style={[
+                styles.messageText,
+                item.sender === "user" && { color: "#fff" },
+              ]}
+            >
+              {item.text}
+            </Text>
+          </View>
+        )}
+        contentContainerStyle={styles.chatContainer}
+      />
 
       <TouchableOpacity
-        style={[styles.button, loading && { opacity: 0.5 }]}
+        style={[styles.button, loading && { opacity: 0.6 }]}
         onPress={handleConversation}
         disabled={loading}
       >
@@ -89,24 +73,63 @@ export function TalkUI({ onBack }: { onBack: () => void }) {
         </Text>
       </TouchableOpacity>
 
-      {loading && <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />}
-
-      {userSpeech ? <Text style={styles.response}>🗣️ You: {userSpeech}</Text> : null}
-      {botReply ? <Text style={styles.response}>🤖 Gossipy: {botReply}</Text> : null}
-
-      <TouchableOpacity onPress={onBack} style={styles.backButton}>
-        <Text style={styles.backText}>⬅️ Back to Chat</Text>
-      </TouchableOpacity>
+      {loading && (
+        <ActivityIndicator
+          size="large"
+          color="#007AFF"
+          style={{ marginTop: 10 }}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" },
-  title: { fontSize: 22, fontWeight: "bold", color: "#007AFF", marginBottom: 20 },
-  button: { backgroundColor: "#007AFF", paddingVertical: 14, paddingHorizontal: 40, borderRadius: 30 },
+  container: { flex: 1, backgroundColor: "#fff" },
+
+  // 🔹 Header styles
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#007AFF",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  switchMode: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+
+  chatContainer: { padding: 10, flexGrow: 1 },
+  bubble: {
+    padding: 10,
+    marginVertical: 5,
+    borderRadius: 10,
+    maxWidth: "80%",
+  },
+  userBubble: {
+    alignSelf: "flex-end",
+    backgroundColor: "#007AFF",
+  },
+  botBubble: {
+    alignSelf: "flex-start",
+    backgroundColor: "#E5E5EA",
+  },
+  messageText: { fontSize: 16, color: "#000" },
+  button: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    alignSelf: "center",
+    marginVertical: 10,
+  },
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
-  response: { fontSize: 16, color: "#333", marginTop: 20, textAlign: "center", paddingHorizontal: 20 },
-  backButton: { marginTop: 40 },
-  backText: { color: "#007AFF", fontSize: 16 },
 });
