@@ -1,5 +1,16 @@
 
 MVP (Minimum Viable Product) Feature
+------------------------------------
+
+Features
+    1.  Authentication
+    2.  Profile
+    3.  Study Plan
+    4.  Concept Explainer
+    5.  Weak Topic Detection
+    6.  Revision System
+    7.  Progress Tracking
+
 
 1.Authantication
     Create Profile

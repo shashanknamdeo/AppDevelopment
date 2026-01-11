@@ -1,0 +1,61 @@
+
+I will use 
+    Server          :   AWS Elastic Beanstalk Backend Hosting + Django Backend Framework
+    Authantication  :   Use AWS Cognito for Authentication + Django
+    Database        :   RDS (PostgreSQL)
+
+
+
+User
+ └── StudyPlan
+       └── AI_Plan_Versions
+             └── AI_Topic_Plans
+                   └── Study_Sessions
+                         └── Session_Tasks
+                               └── User_Feedback
+
+
+
+
+
+
+    BackGround Tasks (later)
+        Redis   :   List of Tasks what to do in Background
+        Celery  :   Exicute the Listed Tasks in Background
+
+___________________________________________________________________________________________________
+
+
+Use AWS Cognito for Authentication + Django/FastAPI for Learning Logic
+
+Profile creation and first login
+    1.  Signup → Cognito → Email Verification (User Creatiion Complete)
+    2.  Login → Cognito → JWT Token
+    3.  JWT → Django Backend
+    4.  Django verifies token locally
+    5.  Django checks user in DB
+    6.  If new → Create profile
+    7.  If existing → Load profile
+    8.  User starts learning
+
+Note : In Step 4 (Django verifies token locally)
+    Django does NOT call Cognito and ask “Is this token valid?”
+    Downloads Cognito public keys (JWKS) than Verifies JWT locally (Signature, Expiry, Issuer, Audience)
+
+-------------------------------------------------
+
+
+Use RDS (PostgreSQL) for Database
+    Very structured
+    Easy queries
+    PostgreSQL supports JSON / JSONB columns (good to store AI-generated / flexible data = JSON)
+    Best for ANALYTICS (Analytics is very Imp in NeuroLearn)
+
+
+___________________________________________________________________________________________________
+
+
+
+Dout:
+
+JWT token (ID Token, Access Token, Refresh Token)
