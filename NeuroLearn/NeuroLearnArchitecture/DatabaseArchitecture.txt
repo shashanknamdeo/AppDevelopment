@@ -1,4 +1,15 @@
 
+Use RDS (PostgreSQL) for Database
+    Very structured
+    Easy queries
+    PostgreSQL supports JSON / JSONB columns (good to store AI-generated / flexible data = JSON)
+    Best for ANALYTICS (Analytics is very Imp in NeuroLearn)
+
+___________________________________________________________________________________________________
+
+Database Architecture
+---------------------
+
 User
  └── StudyPlan
        └── AI_Plan_Versions
@@ -9,13 +20,13 @@ User
 
 
 Core Tables
-    1.  users
-    2.  study_plans
-    3.  ai_plan_versions
-    4.  ai_topic_plans
-    5.  study_sessions
-    6.  session_tasks
-    7.  user_feedback
+    1. Users
+    2. Study_plans
+    3. Ai_plan_versions
+    4. Ai_topic_plans
+    5. Study_sessions
+    6. Session_tasks
+    7. User_feedback
 
 
 -------------------------------------------------

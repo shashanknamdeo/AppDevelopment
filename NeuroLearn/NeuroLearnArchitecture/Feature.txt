@@ -4,59 +4,46 @@ MVP (Minimum Viable Product) Feature
 
 Features
     1.  Authentication
-    2.  Profile
-    3.  Study Plan
-    4.  Concept Explainer
-    5.  Weak Topic Detection
-    6.  Revision System
-    7.  Progress Tracking
+    2.  Onboarding
+    3.  Study Plan Creation
+    4.  Study Session Generation
+    5.  Concept Explainer
+    6.  Progress Tracking (basic)
 
 
-1.Authantication
-    Create Profile
-    Login 
+1. Authentication
+    Sign Up
+    OTP
+    Login
 
-2. Personalized Study Planning
-    Students can define:
-        What TOPIC they want to study
-        How many HOURS they can study per day
-        In how many DAYS they want to complete the topic
-    Based on this, the NeuroLearn:
-        Creates a customized study plan
-        Breaks large topics into small, manageable lessons
-        Adjusts the plan dynamically based on student progress
+2. Onboarding
+    Name
+    Email
+    Phone no.
+    -------------------------------------------------
+    Topic
+    Current level
+    Learning pace
+    Study days & time
+    -------------------------------------------------
+    Age group
+    Background stream
+    Goal
 
-3. AI Concept Explainer
+3️. Study Plan Creation
+    Topic
+    Sub-Topic 
 
-4. Identifying Weak Topics Automatically
-    The NeuroLearn uses QUESTIONS, QUIZZES, and small assessments to understand:
-        Which topics the student understands
-        Where the student is confused
-    It does not depend on NeuroLearn asking student questions; instead, it detects weaknesses automatically.
+4️. Study Session Generation
+    Warm-up
+    Core explanation
+    Guided examples
+    Active recall
+    Reinforcement
+    Summary
 
-5. Adaptive and Simplified Explanation
-    If a student ANSWERS INCORRECTLY:
-        The NeuroLearn explains the topic again in a simpler and more intuitive way
-        Uses examples, analogies, and step-by-step breakdowns
-    If the student STILL STRUGGLES:
-        The explanation becomes even easier, possibly going back to prerequisite concepts
-        This continues until the student clearly understands the topic, without embarrassment or pressure.
+5️. Concept Explainer
+    Explains concepts in a simple, step-by-step manner, adapting explanations when the learner feels confused or needs re-explanation.
 
-6. Smart Revision System (Short-term & Long-term)
-    To strengthen memory and understanding:
-        NeuroLearn revises topics:
-        Short-term (daily or weekly revision)
-        Long-term (after weeks or months)
-    Uses spaced repetition so concepts are not forgotten
-    Revision includes:
-        Short summaries
-        Key points
-        Practice questions
-
-7. Continuous Progress Tracking
-    Topics mastered
-    Topics needing more work
-    Parents or teachers (optional) can view:
-    Learning progress
-    Weak areas
-    Improvement over time
+6️. Progress Tracking (Basic)
+    Tracks completed sessions, time spent, and learning consistency to show learners their progress and motivate continuous learning.

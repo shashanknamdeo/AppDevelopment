@@ -1,61 +1,132 @@
 
-I will use 
-    Server          :   AWS Elastic Beanstalk Backend Hosting + Django Backend Framework
-    Authantication  :   Use AWS Cognito for Authentication + Django
-    Database        :   RDS (PostgreSQL)
+High Level Architecture
+    MVP                     :   Finalized
+    Server                  :   AWS Elastic Beanstalk Backend Hosting + Django Backend Framework
+    Authantication          :   Use AWS Cognito for Authentication + Django Backend Framework
+    Database                :   AWS RDS (PostgreSQL)
+    Onboarding Info         :   Finalized
+    AI Prompt               :   Finalized
+    System Contract         :   Finalized
+    API                     :   REST (JSON)
+    AI Integration Strategy :   Finalized
+    AI Calls (Sync/Async)   :   Sync
 
-
-
-User
- └── StudyPlan
-       └── AI_Plan_Versions
-             └── AI_Topic_Plans
-                   └── Study_Sessions
-                         └── Session_Tasks
-                               └── User_Feedback
-
-
-
-
-
-
-    BackGround Tasks (later)
-        Redis   :   List of Tasks what to do in Background
-        Celery  :   Exicute the Listed Tasks in Background
 
 ___________________________________________________________________________________________________
 
 
-Use AWS Cognito for Authentication + Django/FastAPI for Learning Logic
+MVP
+    Authentication
+    Onboarding
+    Study Plan Creation (AI)
+    Study Session Generation
+    Concept Explainer
+    Progress Tracking (basic)
 
-Profile creation and first login
-    1.  Signup → Cognito → Email Verification (User Creatiion Complete)
-    2.  Login → Cognito → JWT Token
-    3.  JWT → Django Backend
-    4.  Django verifies token locally
-    5.  Django checks user in DB
-    6.  If new → Create profile
-    7.  If existing → Load profile
-    8.  User starts learning
-
-Note : In Step 4 (Django verifies token locally)
-    Django does NOT call Cognito and ask “Is this token valid?”
-    Downloads Cognito public keys (JWKS) than Verifies JWT locally (Signature, Expiry, Issuer, Audience)
 
 -------------------------------------------------
 
 
-Use RDS (PostgreSQL) for Database
-    Very structured
-    Easy queries
-    PostgreSQL supports JSON / JSONB columns (good to store AI-generated / flexible data = JSON)
-    Best for ANALYTICS (Analytics is very Imp in NeuroLearn)
+Authentication (Required Info)
+    Name
+    Email       (Authentication Methord-1)
+    Phone no.   (Authentication Methord-2)
+
+
+-------------------------------------------------
+
+
+Database (AWS -> RDS -> PostgreSQL)
+    Users Table
+    Study_plans Table
+    Ai_plan_versions Table
+    Ai_topic_plans Table
+    Study_sessions Table
+    Session_tasks Table
+    User_feedback Table
+
+
+-------------------------------------------------
+
+
+Onboarding
+    Personal Info
+        Name
+        Email (OTP Verification)
+        Phone no.
+    Learning Info
+        Topic
+        Current level
+        Learning pace
+        Study days & time
+    Helping Info
+        Age group
+        Background stream
+        Goal
+
+-------------------------------------------------
+
+
+AI Prompts
+    Topic Planning Prompt
+    Subtopic Generation Prompt
+    Session Creation Prompt
+    Re-Explanation Prompt (Confusion Handler)
+
+-------------------------------------------------
+
+
+System Contract
+    Authentication System Contracts
+    User AND Onboarding Contracts
+    Study Plan Creation Contract
+    Subtopic Generation Contract
+    Study Session Creation Contract
+    Re-Explanation Contract
+    Quiz Generation Contract
+    User Feedback Contract
+
+
+-------------------------------------------------
+
+AI Integration Strategy
+-----------------------
+
+Client (React Native)
+        ↓
+Django REST API
+        ↓
+AI Service Layer (ai_engine)
+        ↓
+Prompt Builder
+        ↓
+AI Provider (Gemini / OpenAI)
+
+
+-------------------------------------------------
+
+AI Calls (Sync)
+    Pros
+        Simple to implement
+        Easy to debug
+    Cons
+        User waits
+        Server is busy during wait
 
 
 ___________________________________________________________________________________________________
 
+Future Enhancement
+------------------
+
+BackGround Tasks (later)
+    Redis   :   List of Tasks what to do in Background
+    Celery  :   Exicute the Listed Tasks in Background
+
+___________________________________________________________________________________________________
 
 
 Dout:
 
 JWT token (ID Token, Access Token, Refresh Token)
+
