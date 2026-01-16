@@ -10,6 +10,7 @@ High Level Architecture
     API                     :   REST (JSON)
     AI Integration Strategy :   Finalized
     AI Calls (Sync/Async)   :   Sync
+    API Endpoints           :   Finalized
 
 
 ___________________________________________________________________________________________________
@@ -112,6 +113,37 @@ AI Calls (Sync)
     Cons
         User waits
         Server is busy during wait
+
+
+-------------------------------------------------
+
+API Endpoints
+    -
+    Authentication & User Initialization
+    -
+    Onboarding Contracts
+        Submit Onboarding Data
+        Get Onboarding Status
+    -
+    Study Plan Creation (AI)
+        Create Study Plan (AI-Generated)
+        Get Study Plan Overview
+    -
+    AI Topic & Subtopic Contracts
+    -
+    Study Session Contracts
+        Generate Study Session
+        Get Study Session
+    -
+    Concept Re-Explanation (Confusion Handler)
+    -
+    Quiz Generation (Optional MVP+)
+    -
+    Progress Tracking
+        Update Session Progress
+        Get Overall Progress
+    -
+    User Feedback
 
 
 ___________________________________________________________________________________________________

@@ -1,14 +1,17 @@
-# Ignore everything at root by default
 
-
-# Ignore backups
+# =========================
+# Project-specific backups
+# =========================
 Snk/SnkApp_backup/
 
+# =========================
 # OS junk
+# =========================
 .DS_Store
 Thumbs.db
 
-
-# Node.js logs or junk at root
+# =========================
+# Node.js logs (root-level)
+# =========================
 npm-debug.log*
 yarn-debug.log*
