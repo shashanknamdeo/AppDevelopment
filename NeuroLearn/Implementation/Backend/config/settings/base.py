@@ -12,31 +12,44 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR = Path(__file__).resolve().parent.parent -------------------------------------------------------------------  <- remove this line
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-kab7f-%3th+g_op4!y1w(*b67r6p%id(p$(yqxip#vp4y#q(+b'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+# SECRET_KEY = 'django-insecure-kab7f-%3th+g_op4!y1w(*b67r6p%id(p$(yqxip#vp4y#q(+b' -----------------------------------  <- remove this line
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 # Application definition
 
 INSTALLED_APPS = [
+    # 
+    # Django default apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # 
+    # Project apps
+    'apps.users',
+    'apps.onboarding',
+    'apps.study_plan',
+    'apps.study_session',
+    'apps.feedback',
+    'apps.progress',
 ]
 
 MIDDLEWARE = [
@@ -67,17 +80,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 
 
 # Password validation
@@ -120,3 +122,7 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# -----------------------------------------------
+
+print("DB NAME:", os.getenv("DB_NAME"))
